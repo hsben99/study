@@ -1,0 +1,201 @@
+=====================================================
+
+*** @ c:\Mest\sql001.txt  => 자동실행 가능
+*** GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기
+*** edit d:\MTest\mysql.txt   메모장으로 열기
+
+sqlplus system/oracle
+conn  system/oracle
+
+
+select * from board ;
+select * from member ;
+=================================================
+=================================================
+***  능력단위 : 2001020405_16v3   데이터베이스 구현
+    ** 능력단위요소
+      => 2001020405_16v3.1  DBMS(Data Base Management System) 설치하기
+      => 2001020405_16v3.2  데이터베이스 생성하기
+      => 2001020405_16v3.3  데이터베이스 오브젝트 생성하기
+
+*** 필요지식
+     => 데이터베이스 관리 (관리자계정/일반계정, 설치, 환경설정, 접근범위)
+     => 데이터베이스 오브젝트(테이블, 인덱스 ... ) 관리
+	- 생성, 무결성 제약조건
+ 	- index, view
+
+
+=================================================
+---------VIEW ----------------------------------------------------------------
+=================================================
+=> 물리적인 테이블에 근거한 논리적인 가상 테이블
+    ( 실제 데이터를 중복해서 보관하지 않고 조건문을 보관함 )
+=> 장점
+	: 자주 검색하는 자료유형을 가상의 테이블로 만들어
+	  매번 조건문을 입력하지 않아도 되도록 해줌.
+
+	  보안에 유리
+	( 사용자별로 접근권한을  부여하여 필요한 부분만 view 를 통해 접근토록함. )
+
+=> 생성
+	create view vname as select 문
+	create or replace view vname as select 문
+	( 없으면 생성 , 있으면 변경 )
+
+*** 실습 **
+=> board , cnt >=5 목록 출력 : bview01
+create view bview01 as select seq, id, cnt, title from board where cnt>=5;
+  -> ORA-00955: 기존의 객체가 이름을 사용하고 있습니다.
+create or replace view bview01 as select seq, id, cnt, title from board where cnt>=5;
+
+=> board 에서  seq, id, name, title (member 와 join) 목록 출력 : bview02 만들기
+create or replace view bview02 as
+      select seq, b.id, m.name, b.title from board b, member m where b.id=m.id;
+select * from bview02;
+
+=> member 에서 id 별로 글등록수가 출력 되는 view : mview01 만들기
+   - id, name, 글등록수(count(*)) 출력
+   select id,name, (select count(*) from board b where b.id=m.id ) 글등록수 from member m;
+
+create or replace view mview01 as
+     select m.id, m.name, (select count(*) from board b where b.id=m.id) 글등록수
+        from member m ;
+select * from mview01;
+
+=> member 에서 id 순서대로 출력하면서 rownum 출력 되는 view : mview02 만들기
+   - rownum, id, name
+   - 주의 사항 : view 생성에서 rownum 을 사용하는 경우 앨리어스를 요구함.
+                ( 중복때문 : view 를 select 했을때도 rownum 을 생성해야하기 때문)
+create or replace view mview02 as
+     select rownum rnum, id, name from (select * from member m order by id) ;
+select m.*, rownum from mview02 m;
+select m.*, rownum from mview02 m where name='민길동';
+
+=> 삭제
+drop view mview02;
+
+------------------------------------------------------
+=> select sno,pay from student where pay>300 를 view01 으로
+    create view view01 as select sno,pay from student where pay>300 ;
+    	-> View created.
+	 select * from view01 ;
+
+	-> create or replace Test
+	create view view01 as select sno,pay from student where sno<4444 ;
+	-> ORA-00955: name is already used by an existing object
+	create or replace view view01 as select sno,pay from student where sno<4444 ;
+	-> View created.
+	select * from view01 ;
+
+=> student  , mcodet 를 이용해서 sno, sname, major, mname(학과명)
+	을 출력하는 view02  생성하기
+	-> select sno,sname, s.major, mname from student s, mcodet m
+		where s.major = m.major ;
+
+	-> create view view02 as select sno,sname, s.major, mname from student s, mcodet m
+		where s.major = m.major ;
+	-> select * from view02 ;
+
+
+=> 새싹 등급의 회원 id, name, lev 를 view 로
+
+create view mView01 as
+	select id, name, lev  from member where lev='D' ;
+
+->  select * from mView01 ;
+
+=> board 의 seq, writer, root, step, indent  만 출력하는 view
+create or replace view  bView01 as select seq, writer, root, step, indent from board ;
+
+create view bView01 as
+	select seq, wid, root, step, indent  from board ;
+
+->  select * from bView01 ;
+
+** 실습
+board 에서 seq, wid, name, title 을 출력하는 v2 만들기.
+-> table join 기능 필요. ( 조건으로 하면됨 )
+
+create view v3 as select seq, wid, name, title from board b, member m where b.wid=m.id ;
+select * from v3 ;
+
+*** join 기능
+select seq, wid, name, title from board b, member m where b.wid=m.id ;
+select seq, wid, name, title from board b join member m on b.wid=m.id ;
+
+=> view 목록조회
+select * from USER_VIEWS ;
+select view_name, text from USER_VIEWS where view_name like '_VIEW__' ;
+--------------------------------------------------------------------------
+VIEW01
+select sno,pay from student where sno<4444
+
+VIEW02
+select sno,sname, s.major, mname from student s, mcodet m
+where s.major = m.majo
+--------------------------------------------------------------------------
+
+=> view 삭제
+
+drop view mView01 ;
+
+확인 select * from mView01 ;
+
+================================================
+--------- INDEX ----------------------------------------------------------------
+=> SQL 구문의 처리 속도를 향상 시키기 위하여 컬럼에 생성하는 오라클객체
+    단, 인덱스를 위한 추가공간이 필요함.
+    인덱스 생성을 위한 추가시간 필요하므로 I,U,D 가 자주 일어나는경우엔 성능에 영향을 줌.
+    (ppt 8장_index 20p)
+
+=> PRIMARY KEY, UNIQUE 제약조건 지정하면 자동 생성
+
+COLUMN INDEX_NAME format a15
+COLUMN TABLE_NAME format a15
+COLUMN COLUMN_NAME format a15
+*** 컬럼명, 테이블명 등은 반드시 대문자
+
+select INDEX_NAME, TABLE_NAME, COLUMN_NAME from USER_IND_COLUMNS
+where TABLE_NAME IN ('MEMBER', 'BOARD') ;
+
+-------------------------------------------------------------
+INDEX_NAME      TABLE_NAME      COLUMN_NAME
+--------------- --------------- ---------------
+SYS_C007003     BOARDT          SEQ
+SYS_C006999     STUDENT         SNO
+-------------------------------------------------------------
+
+=> 생성
+create index myindex on 테이블명(컬럼명) ;
+-> Index created.
+-------------------------------------------------------------
+INDEX_NAME      TABLE_NAME      COLUMN_NAME
+--------------- --------------- ---------------
+SYS_C007003     BOARDT          SEQ
+SYS_C006999     STUDENT         SNO
+MYINDEX          STUDENT         SNAME
+-------------------------------------------------------------
+
+-> mind01 : member 의 name 으로 인덱스를 물리적인 공간에 만들어 줌.
+create index mind01 on member(name);
+-> bind01 : board 의 id 로 ...
+create index bind01 on board(id);
+
+-> 조회 속도가 빨라질 수 있겠죠 ??????
+-> 생성확인
+    select INDEX_NAME, TABLE_ .......
+
+=> Error Test
+create index myindex on boardt(writer) ;
+-> ORA-00955: name is already used by an existing object
+create or replace index myindex on boardt(writer) ;
+-> 허용안함 : ORA-00922: missing or invalid option
+
+=> 삭제
+drop index mind01 ;
+drop index bind01 ;
+
+=> 조회
+select INDEX_NAME, TABLE_NAME from USER_INDEXES where TABLE_NAME IN ('MEMBER') ;
+
+=================================================

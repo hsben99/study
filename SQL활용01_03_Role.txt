@@ -1,0 +1,466 @@
+=====================================================
+
+*** @ c:\Mest\sql001.txt  => 자동실행 가능
+*** GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기
+*** edit d:\MTest\mysql.txt   메모장으로 열기
+
+sqlplus system/oracle
+conn  system/oracle
+
+
+select * from board ;
+select * from member ;
+=================================================
+=================================================
+***  능력단위 : 2001020405_16v3   데이터베이스 구현
+    ** 능력단위요소
+      => 2001020405_16v3.1  DBMS(Data Base Management System) 설치하기
+      => 2001020405_16v3.2  데이터베이스 생성하기
+      => 2001020405_16v3.3  데이터베이스 오브젝트 생성하기
+
+*** 필요지식
+     => 데이터베이스 관리 (관리자계정/일반계정, 설치, 환경설정, 접근범위)
+     => 데이터베이스 오브젝트(테이블, 인덱스 ... ) 관리
+	- 생성, 무결성 제약조건
+ 	- index, view
+
+=================================================
+
+*** 교재 관련 사항
+
+=> VLDB : very large data base 초대형 데이터베이스.
+=> 오라클 RAC(Oracle Real Application Clusters)
+	https://pomsjung.blog.me/221071396500
+	미국 오라클 회사가 개발한 클러스터링 및 고가용성을 위한 프로그램
+	오라클 RAC을 사용하면 여러 대의 컴퓨터가 동시에 한 대의 DBMS 서버에 접속하여
+	데이터를 이용할 수 있다.
+	이를 이용해 DB 클러스터링을 구현할 수 있다. 
+	오라클 9i에 처음 도입되었다. 
+=> OLTP (OnLine Transaction Processing)
+	주 컴퓨터와 통신 회선으로 접속되어 있는 복수의 사용자 단말에서 발생한 트랜잭션을
+	주 컴퓨터에서 처리하여 그 처리 결과를 즉석에서 사용자 단말측으로 되돌려 보내주는처리형태.
+	네트워크상의 여러 이용자가 실시간으로 데이터베이스의 데이터를 갱신하거나 조회하는 등의
+	단위 작업을 처리하는 방식을 말한다.
+	주로 신용카드 조회 업무나 현금 자동 입출금기 등 비즈니스 분야의 금융 거래에 활용된다.
+	가장 잘 알려진 온라인 트랜잭션 처리(OLTP) 소프트웨어는 IBM의 CICS이고
+	하나 이상의 회사가 관련되는 네트워크 트랜잭션을 지원해야하는 요구에 맞춰
+	트랜잭션들이 네트워크 상의 다른 컴퓨터 플랫폼들 위에서 실행될수 있도록 해주는
+	클라이언트/서버 처리 및 브로커 소프트웨어를 사용한다.
+
+=> DB 가용성 : 애플리케이션의 요청에 대해 서비스를 제공하는 시스템의 능력을 의미하며
+                    DB의 중단에 대한 대응력으로 볼 수 있음. 
+
+=>  ACID :  데이터베이스 트랜잭션이 안전하게 수행된다는 것을 보장한다는 4가지 특성  
+
+	- 원자성(Atomicity) 
+	  트랜잭션과 관련된 작업들이 부분적으로 실행되다가 중단되지 않는 것을 보장하는 능력이다.
+	예를 들어, 자금 이체는 성공할 수도 실패할 수도 있지만 보내는 쪽에서 돈을 빼 오는 작업만 성공하고 받는 쪽에 돈을 넣는 작업을 실패해서는 안된다.
+	원자성은 이와 같이 중간 단계까지 실행되고 실패하는 일이 없도록 하는 것이다.
+
+	- 일관성(Consistency)
+	트랜잭션이 실행을 성공적으로 완료하면 언제나 일관성 있는 데이터베이스 상태로 유지하는 것을 의미한다.
+	무결성 제약이 모든 계좌는 잔고가 있어야 한다면 이를 위반하는 트랜잭션은 중단된다.
+
+	- 고립성(Isolation) 
+	트랜잭션을 수행 시 다른 트랜잭션의 연산 작업이 끼어들지 못하도록 보장하는 것을 의미한다.
+	이것은 트랜잭션 밖에 있는 어떤 연산도 중간 단계의 데이터를 볼 수 없음을 의미한다.
+	은행 관리자는 이체 작업을 하는 도중에 쿼리를 실행하더라도 특정 계좌간 이체하는 양 쪽을 볼 수 없다.
+	공식적으로 고립성은 트랜잭션 실행내역은 연속적이어야 함을 의미한다. 성능관련 이유로 인해 이 특성은 가장 유연성 있는 제약 조건이다.
+	
+	- 지속성(Durability)
+	성공적으로 수행된 트랜잭션은 영원히 반영되어야 함을 의미한다. 시스템 문제, DB 일관성 체크 등을 하더라도 유지되어야 함을 의미한다.
+	전형적으로 모든 트랜잭션은 로그로 남고 시스템 장애 발생 전 상태로 되돌릴 수 있다.
+	트랜잭션은 로그에 모든 것이 저장된 후에만 commit 상태로 간주될 수 있다.
+
+
+=================================================
+*** Oracle 데이터베이스 관리 (관리자계정/일반계정, 설치, 환경설정, 접근범위)
+=================================================
+----관리자계정 접근
+
+C:\Users\hb> sqlplus   / as sysdba  ===> sys접근함
+( ** system 계정 : dba 의  권한이 부여된 계정
+     => 그러나 동일권한인지는 ?????   )
+
+또는 conn / as sysdba
+=> conn (connect)  : 사용자 연결 ( 사용중 변경시에도)
+
+conn system/oracle
+
+----새로운 계정 만들기
+
+C:\Users\hb> sqlplus   / as sysdba  ===> sys접근함
+SQL>  show user;
+
+=> new user 만들기
+SQL> create user banana identified by test;
+SQL> conn  banana/test;
+	-> 실패 (권한이 전혀 없기 때문)
+
+** 권한이 없는 경우
+=> ORA-01045: user BANANA lacks CREATE SESSION privilege;
+		logon denied  (로그인 권한 없는경우)
+=> ORA-01031: insufficient privileges  (권한 불충분: 접근 권한 없는경우)
+
+=> 계정 수정 (password 변경)
+SQL> alter user system identified by oracle;
+SQL> alter user banana identified by white;
+
+SQL> conn  system/oracle;
+SQL> conn banana/white;
+
+
+=> 계정삭제
+drop user banana  ;  => 계정에 자료가 없는 경우
+drop user banana cascade  ;  => 계정에 자료가 있는 경우
+
+---------------------------------------
+***   권한설정(grant) 과 롤   ***
+---------------------------------------
+1) 권한설정(grant) 과 회수(REVOKE)
+---------------------------------------
+1.1) DB 접근 권한
+show user  // user(sys) 확인후
+=> grant create session to banana ;
+=> conn  banana/test;
+
+1.2) table 생성 권한
+=> show user  // user(sys) 확인후
+   conn / as sysdba
+
+=> 생성권한 & 공간 사용권한
+grant create table to banana ;
+grant unlimited tablespace to banana ;
+
+** Oracle
+create  table product (
+id varchar2(10) primary key ,
+name varchar2(30),
+price number(10)) ;
+
+insert into product values('a001','bnana 쿠키',1000);
+insert into product values('a002','쵸쿄바',2000);
+insert into product values('a003','감자칩 쿠키',3000);
+
+-> apple 계정에 ...
+create table car (
+  cno varchar2(10) PRIMARY key,
+  color varchar2(10),
+  price number(10)
+);
+insert into car values('s-001-1122','silver',1000);
+insert into car values('s-002-1122','white',2000);
+insert into car values('s-003-1122','brown',3000);
+
+commit ;
+select * from product ;
+=> 테이블 객체의 소유자는 테이블에 관한 모든 권한을 가짐
+    ( CRUD , alter, drop, execute, index, references 등 )
+  -> update product set name='쵸코칩 쿠키' where id='a003' ;
+
+=> table 권한 다른 계정에 부여하기
+** bnana 계정에서 Test
+    grant select on product to system ;
+** 실습 :  system/oracle 로 접속 후 banana 에게
+=>  `````````grant select, update, ..delete on member to banana ;`````````
+=> banana 로 속 후 확인
+select * from  system.member ;
+
+** 실습
+=> apple 계정 만들고, product 의 select , insert, delete 권한 부여하기
+    create user apple identified by red;
+-> system 계정 연결,
+	show user ; // 확인 후 연결
+
+-> apple 계정 만들기, 로그인 권한 부여하기
+	create user apple identified by red;
+	grant create session to apple ;
+
+-> banana 계정 로그인 -> product 사용권한 apple 에게 부여
+	conn banana/black
+	grant select, insert,delete on product to apple ;
+
+-> apple 로그인후  확인
+	conn apple/red
+	select * from banana.product ;
+-----------------------------------------------------------------------
+1.3) 권한 회수
+
+=> REVOKE 회수할 권한 유형 FROM User;
+
+=> 다른 계정에 부여한 권한 철회 하기
+revoke select on member from banana ;
+
+revoke update,insert on product from apple ;
+-> 없는 권한 회수 경우
+-> ORA-01927: cannot REVOKE privileges you did not grant
+
+=> view 생성 권한
+show user  // user(sys) 확인후
+grant create view to banana ;
+
+=> 계정목록 보기
+
+COLUMN OWNER Format a10 ;
+COLUMN TABLE_NAME Format a10 ;
+COLUMN GRANTOR Format a10 ;
+COLUMN PRIVILEGE Format a10 ;
+COLUMN GRANTA Format a10 ;
+COLUMN HIERAR Format a10 ;
+COLUMN GRANTEE Format a10 ;
+
+
+select * from USER_TAB_PRIVS_MADE ;
+=> 현재 계정이 부여한 권한목록
+* banana 계정에서
+----------------------------------------------------------------------------
+GRANTEE    TABLE_NAME GRANTOR    PRIVILEGE  GRANTA HIERAR
+---------- ---------- ---------- ---------- ------ ------
+APPLE      PRODUCT    BANANA     DELETE     NO     NO
+APPLE      PRODUCT    BANANA     INSERT     NO     NO
+APPLE      PRODUCT    BANANA     SELECT     NO     NO
+APPLE      PRODUCT    BANANA     UPDATE     NO     NO
+----------------------------------------------------------------------------
+
+select * from USER_TAB_PRIVS_RECD ;
+=> 현재 계정에게 부여된 권한목록
+* apple 계정에서
+------------------------------------------------------------------------------
+OWNER      TABLE_NAME GRANTOR    PRIVILEGE  GRANTA HIERAR
+---------- ---------- ---------- ---------- ------ ------
+BANANA     PRODUCT     BANANA      SELECT       NO         NO
+BANANA     PRODUCT     BANANA      INSERT       NO         NO
+BANANA     PRODUCT     BANANA      DELETE       NO         NO
+------------------------------------------------------------------------------
+
+---------------------------------------
+2) 롤 (role : 역할)
+=> 사용자에게 간편하게 권한을 부여할 수 있도록 여러개의 권한을
+    묶어놓은 권한의 집합이며 사용자 또는 다른 롤에 부여 됩니다.
+
+=> Oracle 에서 사전에 정의된 롤
+	- connect : db 접속과 관련된 권한 8가지
+		 ( alter session, create table 등 )
+	- resource : 객체(테이블, 뷰, 인덱스) 생성과 관련된 권한
+                         ( create table ... )
+	- dba : 시스템 자원을 무제한 사용 가능하며 시스템관리에 필요한
+ 		모든 권한을 부여할 수 있는 가장 강력한 권한.
+---------------------------------------
+COLUMN username Format a15 ;
+COLUMN granted_role Format a15 ;
+COLUMN COMMENTS Format a20 ;
+
+=> 롤 확인 (롤 관련 데이터 딕셔너리)
+=> select * from DICT where TABLE_NAME LIKE '%ROLE%';
+=> select * from USER_ROLE_PRIVS ; (현재 계정에 부여된 롤)
+     다음 에서 모두 조회.비교 해보기
+    - banana
+	-> no rows selected
+    - system
+	USERNAME        GRANTED_ROLE    ADMIN_ DEFAUL OS_GRA
+	--------------- --------------- ------ ------ ------
+	SYSTEM          AQ_ADMINISTRATO  YES    YES    NO
+                	       R_ROLE
+
+	SYSTEM          DBA                         YES    YES    NO
+	------------------------------------------------------------------------
+
+    - sys  ( conn / as sysdba )
+	------------------------------------------------------------------------
+	USERNAME        GRANTED_ROLE    ADMIN_ DEFAUL OS_GRA
+	--------------- --------------- ------ ------ ------
+	SYS             ADM_PARALLEL_EX YES    YES    NO
+                	    ECUTE_TASK
+
+	SYS             APEX_ADMINISTRA YES    YES    NO
+                                TOR_ROLE
+
+	SYS             AQ_ADMINISTRATO YES    YES    NO
+                	    R_ROLE
+
+		~~~~~  생략
+	------------------------------------------------------------------------
+
+
+=> 롤 생성 ( 관리자 모드에서 )
+=> create role myrole ;  // 롤 생성
+    // 롤에 권한 부여
+=> grant create session, create table, create view to myRole ;
+
+** Test
+공간 사용 권한은 role 에 부여 하면 오류는 없지만, 실제 적용 안되기 때문에
+데이터 입력시 오류 발생.
+그러므로 직접 계정에 사용권한을 부여해야함    
+=> grant create session, create table, unlimited tablespace, create view to myRole2 ;
+create user apple5 identified by red5;
+grant myRole2 to apple5 ;
+
+=> 롤 부여
+     grant myRole to banana ;
+     grant unlimited tablespace to banana ;
+    ( banana 로그인 후 테이블 생성 Test )
+    -> 테이블스페이스 사용권한 없는경우
+       ORA-01950: 테이블스페이스 'USERS'에 대한 권한이 없습니다.
+     grant dba to banana ;
+
+=> 롤 회수
+     revoke dba from banana ;
+
+=> 롤 삭제
+     drop role myrole ;
+
+=> object 관련 권한
+    -> 생성계정 이 가지고 있으므로 생성계정에서 role 에 권한 설정
+
+** 실습
+=> apple 의 product 를 select, update 할 수 있는 권한을
+     apple 에서 approle 롤 만들고 , banana 에게 부여하기
+	-> apple 에서 approle 롤 만들고 , 권한 부여하고
+		- create role approle ;
+		( ORA-01031: insufficient privileges  -> system 계정에서 ..)
+		- grant select, update on product to approle ;
+		( Grant succeeded. -> apple 에서 가능 )
+	-> banana 에게 롤 을 부여
+		- grant approle to banana ;
+		( ORA-01919: role 'APPROLE' does not exist -> system 계정에서 ..)
+	-> banana 에서 Test
+
+---------------------------------------------------------------
+***  Role 에 부여된 권한 확인 하기
+(딕셔너리 테이블 이름 확인 DBA_SYS_PRIVS: sys에서만 , Role_TAB_PRIVS: 일반계정 )
+
+=> CONNECT 롤 의 권한 확인
+SELECT grantee, privilege FROM DBA_SYS_PRIVS WHERE grantee = 'CONNECT';
+SELECT * FROM Role_TAB_PRIVS WHERE grantee = 'CONNECT';
+
+=> frole 롤 의 권한 확인
+SELECT * FROM Role_TAB_PRIVS WHERE grantee ='FROLE';
+SELECT * FROM Role_TAB_PRIVS;
+
+=> myrole 롤 의 권한 확인
+SELECT grantee, privilege FROM DBA_SYS_PRIVS WHERE grantee = 'MYROLE';
+SELECT grantee, privilege FROM Role_TAB_PRIVS WHERE grantee = 'MYROLE';
+	-----------------------------------
+	GRANTEE    PRIVILEGE
+	---------- 	   ----------
+	MYROLE     CREATE VIEW
+	MYROLE     CREATE SESSION
+           	MYROLE     CREATE TABLE
+	------------------------------------
+
+
+** 실습2
+계정 : banana/black , apple/red
+=> myRole2 생성 : product 테이블 의 crud : insert, select, update, delete
+  -> apple 에게 부여, Test
+
+  conn / as sysdba;
+  create role myrole2;
+  grant insert, select, update, delete on banana.product to myrole2;
+  grant myrole2 to apple;
+
+  conn apple/red;
+  select * from banana.product;
+  insert, update, delete ...
+
+  -> role 확인
+  column role format a10;
+  column column_name format a5;
+  SELECT * FROM Role_TAB_PRIVS;
+
+  *****
+  -> apple 계정에도 동일명(product) 의 테이블 생성 후 Test
+  create  table product (
+  id varchar2(10) primary key ,
+  name varchar2(30),
+  price number(10)) ;
+
+  insert into product values('app01','Car',1000);
+  insert into product values('app02','Phone',2000);
+  insert into product values('app03','Ship',3000);
+
+  select * from product;
+  *****
+=> myRole2 삭제 후 Test
+    롤이 삭제되면 이 롤의 권한을 부여받은 계정의 권한도 삭제됨
+
+    conn / as sysdba;
+    drop role myrole2;
+    conn apple/red;
+    select * from banana.product;  => error
+
+    -> 현재 계정에게 부여된 권한 목록
+    select * from USER_TAB_PRIVS_RECD;
+
+    -> 현재 계정에게 부여된 롤 목록
+    SELECT * FROM Role_TAB_PRIVS;
+
+=> banana 에서 myRole2 에게 부여 후 ,
+     grant select on product to myRole2 ;
+=> 해당 계정에 롤 부여
+     grant myRole2 to lol ;
+
+=> 롤 삭제
+    drop role myr2 ;
+    롤이 삭제되면 해당 권리를 가졌던 계정에서도 더이상 그 권리가 없어짐
+
+=> 실습
+member 테이블의 select 권한을 롤 myr2 에 부여하고
+이 롤을 lol 에게 부여하기.
+
+=> 계정생성
+create user lol identified by test;
+
+show user ;
+conn system/oracle
+create role myr2 ;
+grant select on member to myr2 ;
+grant myr2 to lol ;
+conn lol/test ;
+select * from system.member ;
+
+================================================
+================================================
+----oracle lock
+=> 장기간 로그인 안하는 계정  locking 됨 (default : 30일)
+=> 계속 접속시 ORA-2800 에러
+
+=> locking 걸기
+     SQL>alter user system(계정id) account lock;
+     => 해제될때까지 위 id로 접속 안됨
+     lol 계정에 Lock 걸고 Test
+	- alter user lol account lock;
+	- conn lol/test ; => 오류
+
+=> locking 해제
+=> C:\Users\hb> sqlplus   / as sysdba  ===> sys접근함
+     또는 SQL>conn   / as sysdba
+=> SQL>alter user system(계정id) account unlock;
+     lol 계정에 Lock 해제후 Test
+	- conn system/oracle;
+	- alter user lol account unlock;
+	- conn lol/test ;
+
+=> locking 해제후 재접속
+=>conn system/hanbit;
+( 안되면 SQL>conn   / as sysdba 로 접근 후에 )
+
+----oracle Port 변경
+SQL> select dbms_xdb.getHttpPort( ) from dual; // 포트번호 출력
+SQL> exec dbms_xdb.setHttpPort(9000);
+SQL> select dbms_xdb.getHttpPort( ) from dual;
+SQL> commit ;
+
+----SQL 로그인 안되면
+
+=> 제어판 => 시스템및 보안=>관리도구=>서비스
+=> 우측 목록에서 => OracleServiceXE ----시작됨?----자동?  => 상태 확인
+=> OracleServiceXE   더블클릭 / OracleXETNSListener   더블클릭
+
+=> 목록에 없으면 설치 [ oracleXEUniv.exe ]
+
+----오류 ORA-12505, TNS: listener does not currently know of SID given in connect
+=> cmd 에서  Lsnrctl services  입력하면 TNS 관련 설정 맞춰줌
+	 -> 성공적으로 수행 나오면 됨
+
+=================================================
