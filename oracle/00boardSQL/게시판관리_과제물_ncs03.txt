@@ -1,0 +1,83 @@
+** 1. 기본 게시판 만들기 (2020.06.08)
+
+=> board Table (CRUD)
+=> Java : BoardVO, BoardDAO, BService(interface) , BServiceImpl, BoardController
+=> Jsp: boardList, boardDetail, boardInsert, boardUpdate
+
+=> menu 만들기
+-> home.jsp : BoardList, 
+
+-> boardList.jsp
+	* Login : 새글등록, Home
+		Title 을 클릭하면 글내용 보기 (boardDetail.jsp)
+	* Not Login : Login, Home
+
+-> boardDetail.jsp ( Login 이후)
+	* 내글인 경우  -> 글수정, 글삭제
+	* 내글 아닌 경우 -> BoardList, Home , 조회수 증가
+
+** 2. 조회수 증가, 댓글달기
+2.1) 조회수 증가
+=> 로그인 후, 내글 아닌글을 볼때
+
+2.2) 댓글달기
+=> 로그인 후, 내글 남의 글에 모두 댓글달기 가능  
+=> board Table 1개 : table 수정 필요함
+
+
+
+** 3. Paging 1
+
+** 4. Paging 2
+
+
+** 게시판 관리 ***
+
+=> 서버프로그램 포트폴리오 과제
+=> 12월 11일(월) 제출
+=> 서술형 Test 후에 오후 3시50분까지 제출
+=> 본인의 공유폴더에 올려 주세요 ~~
+=> 프로젝트명 => Spring05
+
+
+1. Board    - BoardVo , BoardDao , 
+	  - 조회 : BoardList - blist.do , GetBoard - bdetail.do
+	  - 관리 : Insert - binsert.do , Update - bupdate.do , Delete - bdelete.do 
+	  - BodController 구현 : MemController 와 동일방식으로 
+
+2. xml 까지 완성 
+
+****
+create  table board (    
+seq number(5) primary key ,
+title varchar2(200),
+writer varchar2(20),
+content varchar2(2000),
+regdate  date default sysdate,
+cnt number(5) default 0 ) ; 
+
+***
+insert into board values
+(1, '스프링 이란?','banana','처음엔 복잡하고 난해하지만 친해지면 매우 편리하다',sysdate,0); 
+
+insert into board values
+(2, '의존성 주입?','apple','dependency injection_객체간의 의존관계를 객체 자신이 아닌 외부의 조립기가 수행한다.',sysdate,0); 
+
+insert into board values
+(3, '느슨한 결합(loose coupling)','coffee','객체는 인터페이스에 의한 의존관계만을 알고 있으며 이 의존관계는 구현 클래스에 대한 차이를 모르는채 서로 다른 구현으로 대체가 가능',sysdate,0); 
+
+insert into board values
+(4, 'Spring의 DI 지원','spring','Spring Container가 DI 조립기(Assembler)를 제공',sysdate,0); 
+
+insert into board values
+(5, 'Spring 설정파일','banana','Spring Container가 어떻게 일할 지를 설정하는 파일',sysdate,0); 
+
+insert into board values
+((select nvl(max(seq), 0)+1 from board), 'Spring 설정파일','apple','Spring Container가 ...파일',sysdate,0); 
+
+
+
+
+
+
+

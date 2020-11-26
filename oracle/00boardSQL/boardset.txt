@@ -1,0 +1,15 @@
+set linesize 1200
+set pagesize 1200
+
+COLUMN title Format a10 ;
+COLUMN writer Format a10 ;
+COLUMN content Format a40 ;
+COLUMN seq Format 99 ;
+
+COLUMN id Format a10 ;
+COLUMN passward Format a10 ;
+COLUMN name Format a20 ;
+COLUMN lev Format a5 ;
+
+select * from board ;
+

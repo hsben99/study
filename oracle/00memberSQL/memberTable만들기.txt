@@ -1,0 +1,75 @@
+
+*** @ c:\Mest\sql001.txt  => 자동실행 가능
+*** GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기 (spool 화일등)
+*** edit c:\MTest\boardset.txt   메모장으로 열기
+
+*** oracle 접속
+
+sqlplus system/oracle
+
+conn system/oracle
+
+** member Table Create
+
+set linesize 1200
+set pagesize 1200
+COLUMN id Format a10 
+COLUMN password Format a10
+COLUMN name Format a10
+COLUMN lev Format a5
+COLUMN addr Format a10
+COLUMN birthd Format a10
+COLUMN point Format 99999
+COLUMN weight Format 999.99
+COLUMN uploadfile Format a10
+-------------------------------------------------------------------
+
+create  table member (    
+id varchar2(10) primary key ,
+password varchar2(10),
+name varchar2(30),
+lev varchar2(5),
+pay number(10),
+birthd date ,
+weight number(5,2)) ; 
+
+
+
+insert into member values('javasam','12345!','김유신','A',12345,sysdate,67.89); 
+insert into member values('hongsam','12345!','홍길동','A',12345,sysdate,67.89); 
+insert into member values('leesam','12345!','이순신','A',12345,sysdate,67.89); 
+insert into member values('banana','12345!','바나나','B',12345,sysdate,67.89); 
+insert into member values('coffee','12345!','카푸치노','B',12345,sysdate,67.89); 
+insert into member values('apple','12345!','스티브','B',12345,sysdate,67.89); 
+
+select * from member ;
+
+-----실습
+
+      alter table member add  primary key (name) ;
+
+      alter table member add pay number(10); 
+      alter table member add weight number(5,2); => 123.12
+      alter table member add birthd date default sysdate  ; 
+	
+      update  member  set pay = 6789  ;
+      update  member  set pay = 3456  where lev='A' ;
+     alter table member drop column birthd2 ;
+
+      rename guest to guest2 ;	
+
+
+*** SQL 실습  :  SPOOL  적용 
+
+1*  member table 의 자료 수정  (DML) : commit 필요
+	member 에서 자료  insert  ,  update ,   delete  => 2개씩  
+
+2* member table 의 구조 수정  (DDL) :   AutoCommit
+	필드 추가 , 삭제 , 필드명 변경1개 씩 
+  
+3* member table 의 조회 (DQL)
+	where 조건문 20개 연습 ( like ,  order by , and , or 4개씩 )  
+ 
+4* table 생성 -> member2 ( 자료 3개만 입력 , 조회 )
+
+

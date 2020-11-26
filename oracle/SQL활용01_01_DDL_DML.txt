@@ -1,0 +1,1205 @@
+=====================================================
+*** spool 사용하기
+=> spool ... 이후 부터  spool off 까지 실행한 sql 구문이 아래 화일에 보관됨.
+
+sql>spool d:\MTest\sql001.txt 
+
+=> 계속 추가  
+sql>spool d:\MTest\sql001.txt  append 
+ 
+sql>spool off   
+
+-----------------------------------------------------------------
+
+*** @ d:\MTest\sqlStart.txt  => 자동실행 가능
+*** GET d:\MTest\sqlStart.txt    sqlPlus 로 화일 불러오기
+*** edit d:\MTest\boardset.txt   메모장으로 열기
+ 
+sqlplus system/oracle
+conn  system/oracle
+
+set linesize 100
+set pagesize 100
+
+COLUMN id Format a10 ;
+COLUMN password Format a10 ;
+COLUMN birthd Format a10 ;
+COLUMN address Format a15 ;
+COLUMN sname Format a10 ;
+COLUMN pay Format 99999;
+COLUMN sno Format 99999 ;
+
+COLUMN title Format a15 ;
+COLUMN seq Format 999 ;
+COLUMN content Format a40 ;
+COLUMN regdate Format a12 ;
+
+
+
+COLUMN idno Format a14 ;
+COLUMN name Format a10 ;
+COLUMN age Format 999 ;
+COLUMN gender Format a6 ;
+
+
+COLUMN price Format 999999 ;
+COLUMN code Format a10 ;
+
+
+
+COLUMN root Format 999 ;
+COLUMN step Format 999 ;
+COLUMN indent Format 999 ;
+
+COLUMN username Format a15 ;
+COLUMN granted_role Format a20 ;
+
+COLUMN Constraint_Name Format a15 ;
+COLUMN Column_Name Format a15 ;
+COLUMN Constraint_Type Format a15 ;
+COLUMN Table_Name Format a15 ;
+
+select * from board ;
+select * from member ;
+=================================================
+
+*** 관련 능력 단위
+
+***  능력단위 : 2001020205_16v4   데이터 입출력 구현
+    ** 능력단위요소
+	=> 2001020205_16v4.3  데이터 조작 프로시저 작성하기 
+     	=> 2001020205_16v4.4  데이터 조작 프로시저 최적화하기
+
+***  능력단위 : 22001020413_16v3   SQL활용
+    ** 능력단위요소
+      => 2001020413_16v3.1 기본 SQL 작성하기
+      => 2001020413_16v3.2 고급 SQL 작성하기
+   
+=================================================
+2001020413_16v3.1 기본 SQL 작성하기
+=================================================
+※기본적인 SQL문
+
+1. DDL(Data Defineton Language) : 데이터를 정의
+   - create, alter, drop, rename, truncate등
+   - 자동커밋이 발생
+
+2. DML(Data Manipulation Language) : 데이터를 조작하는 기능
+   - select, insert, delete, update
+   - transcation처리(commit, rollback)
+ 
+   ( DQL : 데이타검색 )
+   - select 
+
+3. TCL : Transaction 제어
+   - commit, rollback, savepoint
+
+4. DCL(Data Control Language) : 데이타 제어어
+   - grant,  revoke
+
+** schema : 개요, 윤곽
+** domain : 영역, 범위
+** revoke : 폐지하다
+** grant : 승인하다, 인정하다
+
+==MySql 과 오라클 비교 ===================================
+
+*** 오라클은 계정 별로 관리
+
+*** 반면에 MySql 은 Table 위에 DataBase가 있음
+	( 계정 아래에 반드시 DataBase가 있어야 Table 생성이 가능하다 )	
+	=> DataBase 생성 후 Table 생성 
+	만들기   => create database db1 ;
+	확인하기 => show databases ; 
+	사용하기 => use db1 ;
+	현재 사용중인 DB 표시하기 => select database() ;
+	삭제하기 => drop database db1 ;
+
+*** 데이터 타입 의 다른점 
+	-> oracle : number
+	-> mySql : integer , float 로 구별해서 사용 
+
+== 오라클의 자료형 ========================================= 
+
+=> size 단위 : byte
+
+ number : 숫자형
+	-> number(p,s) 
+	-> p : 소수점 미포함 전체 자리수 (5,2) -> 999.99
+	-> s : 소수점 이하 자리수
+	-> p 만 사용하면 소수점 이하는 반올림 되어 정수값만 저장
+	-> p,s 모두 생략하면 입력한 값만큼 공간 할당 (38자리)
+ 
+ char   : 문자형(고정형)-2000byte까지 
+
+ varchar2 : 문자형(가변형) - 4000byte까지
+	** 한글 길이
+	-> 조합형은 글자당 2byte
+	-> unicode 글자당 3byte
+
+
+ long : 긴가변의 문자열) - 2GB 까지 
+
+ clob : 문자형(4000byte이상일때)   - 최대 4GB
+	-> e-book 등 대용량의 텍스트 데이터
+ blob : binary로저장(그림, 음악등) - 최대 4GB
+	-> 이미지, 사운드 등 구조화 되지 않은 데이터 저장 
+
+ datetime : 날짜시간형
+	-> 세기, 년,월,일,시,분,초 
+	-> 특별한 형식의 지정이 없으면 년,월,일 만 출력 
+	-> bc 4712년 1월1일 ~ ad 4712년 12월31일 까지의 날짜
+ timestamp : date형의 확장
+
+==================================================== 
+
+*** DDL 연습
+
+=> 생성(신규생성/다른테이블을 이용한 생성), 변경, 삭제
+=> Table 관리 
+	select * from tab;   => 테이블목록확인
+	show tables ; (MySql)
+	show all ;  
+	show autocommit ;
+	help index ;
+	desc student;          => describe의 약자(테이블 구조확인) 
+
+-------------------------------------------------------
+*** 제약조건 Constraints
+=================================================
+
+** 5가지 기본 조건
+
+=> PRIMARY KEY , p
+	: NOT NULL & UNIQUE
+=> FOREIGN KEY , r
+=> NOT NULL , c
+=> UNIQUE  , u
+	: 중복 불가 (유일성 조건)
+=> CHECK  , c
+	: 저장 가능한 데이터의 값의 범위나 조건을 지정하여 설정한 값만을 허용
+	( MySQL 적용 안됨 )
+
+=> DEFAULT 
+
+=> Sample
+-------------------------------
+create  table memberC (    
+id varchar2(10) Constraint tc01 PRIMARY KEY ,
+password varchar2(10) Constraint tc02 UNIQUE,
+name varchar2(30) Constraint tc03 NOT NULL,
+lev varchar2(2) Constraint tc04 check(lev in('A','B','C','D')),
+birthd varchar2(10) ,
+point number(10) DEFAULT 100 ,
+weight number(5,2) Constraint tc05 CHECK(weight BETWEEN 30 AND 200) ); 
+---------------------------------------------------
+insert into memberc values('test','12345!','테스터','A','2020-11-23',101,65);
+insert into memberc values('test','12345!','테스터','E','2020-11-23',101,65);
+=================================================
+	 
+1) 신규 테이블 만들기
+  
+=> 테이블명,
+=> 필드명, type, size, (제약조건 : 필요시에만) 
+
+=> create문(테이블생성)
+   create table 테이블명(
+         필드이름 데이터타입 [not null][primary key],
+         필드이름 데이터타입 [not null].........);
+
+SQL> create  table  guest (  //엔터치면 자동으로 행번호    
+2   sabun   number(4) primary key ,
+3   name   varchar2(10) not null  ,
+4   title    varchar2(10) not null  ,
+5   nalja   date  not null ,
+6   pay     number(3)   not null
+    ) ; 
+
+-------- Foreign key  Constraints 설정 
+
+create table boardF(
+seq number(5)  constraint bc01  primary Key ,
+writer varchar2(10) constraint bc02 REFERENCES memberc(id) ) ;
+
+-----------------------------------
+
+=> person 만들기
+
+create table person (
+idno varchar2(14) primary key,
+name varchar2(20) not null,
+age number(3),
+gender char(1) 
+) ;
+
+=> 교재 10p 표1.7 을 이용하여 생성 실습 
+-----------------------------------
+
+CREATE TABLE `주문테이블 ordert` ( 
+	`orderno` varchar(16) NOT NULL, 
+	`custno` varchar(16) NOT NULL,
+	`orderdate 주문일` varchar(8) NOT NULL,
+	`price` decimal(15,2) NOT NULL,
+	`배송도시` varchar(256),
+	`배송완료일` varchar(8),
+	`결제금액` varchar(8),
+	`할인금액` decimal(15,2) NOT NULL,
+	`point` decimal(15,2) NOT NULL,
+	PRIMARY KEY (`주문번호`)
+) 
+==> Student , boardt, mcodet 
+
+CREATE TABLE ordert (
+orderno varchar(10)  , 
+// => auto numbering 
+custno varchar(10) references student(sno),
+// Student 의 sno 를 참조하도록 -> foregin Key
+orderdate date  NOT NULL,
+price number(15,2) NOT NULL,
+point number(5,2) NOT NULL default 100,
+PRIMARY KEY (orderno)); 
+-----------------------------------
+=> 
+CREATE TABLE ordert (
+orderno number(10)  ,
+custno number(4) references student(sno),
+orderdate date  NOT NULL,
+price number(15,2) NOT NULL,
+point number(5,2) default 100,
+PRIMARY KEY (orderno)); 
+
+
+
+*** Table 레코드(row) 입력
+
+=>  insert into 테이블명[(필드이름1, 필드이름2....)]  values
+ 					(data1,data2...)
+    예)
+       insert into member(name, email, addr) values	('magic','magic@m.com','서울');
+       insert into member  values ('magic','magic@m.com','서울');
+       insert into member(name, email) values
+ 			('magic','magic@m.com');
+
+    예)모든 필드값을 입력하는 경우 필드명 생략가능
+       insert into member  values('오이', 27, 'A');
+
+=> insert into ordert (orderno, custno, orderdate, price)
+                    values ((select nvl(max(orderno),0)+1 from ordert),1111,sysdate,10000) ;
+
+=> person 에 insert 하기
+insert into person values ('900909-1234567','홍길동',80,'M' ) ;
+insert into person values ('000101-3234567','김나라',20,'M' ) ;
+insert into person values ('990101-2234567','이나라',22 ,'F' ) ;
+insert into person values ('000909-4234567','홍길동',18,'M' ) ;
+insert into person values ('030909-4234567','홍길동',18,'M' ) ;
+insert into person values ('040909-4234567','홍길동',18,'M' ) ;
+
+insert into person values ('900909-1234567','이철숙',81,'F' ) ; 
+1행에 오류:
+ORA-00001: 무결성 제약 조건(SYSTEM.SYS_C0011048)에 위배됩니다
+
+insert into person values ('880909-1234567','',81,'F' ) ;
+1행에 오류:
+ORA-01400: NULL을 ("SYSTEM"."PERSON"."NAME") 안에 삽입할 수 없습니다
+
+=> select 문의 colomn 선택
+select * from person;     // * :  모든컬럼
+select idno, name from person;
+
+=> select 문의 row 선택
+select * from person where name='홍길동' ;
+select * from person where age < 50 ;
+
+=> 행, 열 모두 선택 
+나이가 50 보다 작은 자료(레코드, 행)의 이름과 나이를 출력하세요 ~~
+select name, age from person where age < 50 ; 
+
+*** TEST 
+
+=> error0
+ insert into ordert (orderno, custno, orderdate, price)
+                    values (1,1111,sysdate,10000) ;
+ -> ORA-00001: unique constraint (SYSTEM.SYS_C007009) violated	
+
+=> error1
+ insert into ordert values ((select nvl(max(orderno),0)+1 from ordert),1111,sysdate,10000) ;
+  -> ORA-00947: not enough values
+=> error2
+ insert into ordert (orderno, custno, orderdate, price)
+                    values ((select nvl(max(orderno),0)+1 from ordert),1111,'',10000) ;	
+ -> ORA-01400: cannot insert NULL into ("SYSTEM"."ORDERT"."ORDERDATE")
+=> error3
+ insert into ordert (orderno, custno, orderdate, price)
+                    values ((select nvl(max(orderno),0)+1 from ordert),9999,sysdate,10000) ;
+ -> ORA-02291: integrity constraint (SYSTEM.SYS_C007010) violated 
+    		- parent key not found
+
+
+---------------------------------------------------
+=> default 값 설정시 default 값을 적용 하려면 ... 
+
+create table student( 
+code char(1) primary key ,
+name varchar2(20) not null,
+score number(3) default 77 
+) ;
+ 
+insert into student values('a','자바') ;  (x) 
+insert into student (code,name) values('a','자바') ;  (o)
+
+
+SQL> insert   into  guest  values( 1100, 'bc', 'card',  sysdate, 27 ) ;
+SQL> insert   into  guest  values( 2200, 'cd', 'case', sysdate,  96 ) ;
+SQL> commit ;
+
+----------------------------------------------------
+=> data 5개 입력 하기
+
+insert into ordert values('0001','banana',sysdate,10000,1000);
+insert into ordert values('0002','banana',sysdate,50000,1500);
+insert into ordert values('0003','apple',sysdate,100000,2000);
+insert into ordert values('0004','coffee',sysdate,70000,1700);
+commit ;
+select * from ordert;
+ 
+---------------------------------------------------
+*** 실습 
+=> 제약조건 확인, 삭제, 추가
+
+=> 제약조건 확인
+   user_Constraints, USER_CONS_COLUMNS 모두 사용 가능.
+
+set linesize 100 ;
+set pagesize 100 ;
+COLUMN Constraint_Name Format a15 ;
+COLUMN Column_Name Format a15 ;
+COLUMN Constraint_Type Format a15 ;
+COLUMN Table_Name Format a15 ;
+
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('MEMBERC') ;
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('boardf') ;
+---------------------------------------------------------------
+CONSTRAINT_NAME CONSTRAINT_TYPE TABLE_NAME
+--------------- --------------- ---------------
+SYS_C007007     C               ORDERT
+SYS_C007008     C               ORDERT
+SYS_C007009     P               ORDERT
+SYS_C007010     R               ORDERT
+
+---------------------------------------------------------------
+
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS 
+where Table_Name = 'MEMBERC' ;
+
+
+---------------------------------------------------------------
+CONSTRAINT_NAME COLUMN_NAME     TABLE_NAME
+--------------- --------------- ---------------
+SYS_C007007     ORDERDATE       ORDERT
+SYS_C007008     PRICE                ORDERT
+SYS_C007009     ORDERNO          ORDERT
+SYS_C007010     CUSTNO            ORDERT
+---------------------------------------------------------------
+
+insert into ordert values('0005','coffee',sysdate,70000,'');
+-> 동일 키 와 null 입력 후 확인
+-> p key 위배, not null 에 위배 
+
+=> 제약조건 삭제
+alter table ordert  drop constraint SYS_C004683 ;
+
+=> 제약조건 추가
+-> memtest1 의 id 에 p key 설정 
+alter table memtest1 add primary key (id) ;
+
+-> constraint 이름을 정의하며 추가하기 
+-> unique 속성과 data type 과 부적합 (X)
+alter table ordert add constraint "cc01"  unique(point) ;
+
+-> 테이블 구조 변경 후 test (OK)
+alter table ordert add constraint "cc01" unique(item) ;
+
+alter table ordert add constraint "cc01" not null(point) ;
+-> not null 속성은 table level 속성이라서  add constraint 는 불가능하고,
+	   column modify  로 수정 가능함.
+
+*************************************************
+---------------------------------------------------------------
+2) 다른 테이블을 이용해서 신규 테이블을 생성하는 방법
+=> 교재 10p
+---------------------------------------------------------------
+
+2.1) 테이블 구조와 데이터 모두 복사
+ 
+create table memTest1 as select * from member  ;
+select * from memtest1 ;
+
+create table mystu2 as  select  * from student where sno>9999 ;
+
+-> mymember , myboard 만들기
+create table mymember as select * from member ;
+create table myboard as select * from board ;
+
+=> 실습 
+member 의 lev 가 'A' 인 member 의 id,password,name,lev 만 복사한 memberA를 만든다.
+create table mymember as select * from member where = 'A';
+=> 확인
+
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('MYMEMBER') ;
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS where Table_Name = 'MYMEMBER' ;
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('MYBOARD') ;
+
+-> memtest1 동일 id 자료 입력 해보기
+insert into mymember values('orange','1111','오렌지','A','1999-09-09',100,100) ; 
+-> 제약조건은 복사 안됨.
+
+=> 원하는 column, row 선택가능 그러나 제약조건은 복사 안됨.
+create table memTest2 as select id, name, point from memtest1 ;
+select * from memtest2 ;
+
+2.2) 데이터 없이 테이블 구조만 복사 
+
+=> where 에서 항상 false 인 조건을 지정  
+create table memtest3 as select * from memtest1 where 1=2 ;  
+select * from memtest3 ;
+
+-> member 와 동일 구조의 student 만들기
+create table student as select * from member where name='홍길동';  
+
+
+2.3) 이미 만들어진 Table에 다른 Table의 자료들 복사하기
+=> 테이블 구조가 같아야함, 원하는 column, row 선택가능
+
+-> student  에 member 의 자료 담기
+insert into student select * from member ;
+
+insert into memtest3 select * from member where lev='D' ;
+select * from memtest3 ;
+
+insert into mystu2 select * from student where sno >= 3333 ;
+
+=> 이미 만들어진 Table에 다른 Table의 특정컬럼 선택해서 복사하기
+insert into memtest1 (point) select point from member, memtest1 where memtest1.id=member.id ;
+select id, lev, point from memtest1 ; 
+
+-------------------
+=> 제약조건은 복사가 되지 않음 확인
+    ( alter table ......테이블 구조변경 으로 조건 추가해야 함 
+	alter table mymember add primary key (id) ;   ) 	
+
+*** 실습1. 학생 들의 성적을 관리하는 scoret 을 생성하고, 
+               테이블 구조 변경을 통해서 sno 에 P. key 제약조건을 추가하고,
+	sno 를 모두 student 에서 가져오기.... 
+
+-> 제약조건 없이 scoret Table 생성 ( sno, java, jsp, db => number(4) )
+create table scoret( 
+sno number(4),
+java number(4), 
+jsp number(4),
+db number(4)
+) ;
+-> sno 에 P. key 제약조건을 추가
+alter table scoret add primary key (sno) ;
+
+-> sno 를 모두 student 에서 가져오기
+insert into scoret (sno) select sno from student ;
+
+-> 확인
+select * from scoret ;
+----------------------------------------
+   SNO       JAVA        JSP         DB
+------ ---------- ---------- ----------
+  1111
+  2222
+  3333
+  4444
+  5555
+  7777
+----------------------------------------
+
+
+
+select Constraint_Name,Column_Name,Table_Name from USER_CONS_COLUMNS 
+where Table_Name in('MEMBER','MEMTEST1','MEMTEST2','MEMTEST3') ;
+
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints 
+where Table_Name in('MEMBER','MEMTEST1','MEMTEST2','MEMTEST3') ;
+
+=================================================
+
+*** 제약조건 종합 연습
+=> 제약조건 이름, 5개 속성 연습 (referenced 제외) 
+
+create  table memberC (    
+id varchar2(10) Constraint cc01 PRIMARY KEY ,
+password varchar2(10) Constraint cc02 UNIQUE,
+name varchar2(30) Constraint cc03 NOT NULL,
+lev varchar2(2) DEFAULT 'D',
+birthd varchar2(10) ,
+point number(10) DEFAULT 100 ,
+weight number(5,2) Constraint cc04 CHECK(weight BETWEEN 30 AND 200) ); 
+
+-----------------------------------------------
+
+** test1) varchar2 에 check 부여 가능한지 ???
+create  table memberT (    
+id varchar2(10) Constraint tc01 PRIMARY KEY ,
+lev varchar2(2) Constraint tc02 CHECK(lev BETWEEN 'A' AND 'D') ); 
+-> Table created.
+
+=> insert 확인 
+insert into memberT values('banana','A');
+insert into memberT values('apple','D');
+-> 1 row created.
+
+insert into memberT values('orange','K');
+-> ORA-02290: check constraint (SYSTEM.TC02) violated
+
+** test2) check 로 'in' , 'out' 제한 가능한지 ???
+create  table memberO (    
+id varchar2(10) Constraint oc01 PRIMARY KEY ,
+lev varchar2(3) Constraint oc02 CHECK(lev IN ('in','out') )); 
+-> Table created.
+
+=> insert 확인 
+insert into memberO values('orange','in');
+insert into memberO values('melon','out');
+
+** 참고사항 --------
+insert into memberO values('melon', sysdate+3,'out');
+v3 = sysdate+i  //  현재부터 3일 후 
+sql= "insert into memberO values('"   + v1 + "'," +v3+",'" + v2 + "')" ;
+----------------------- 
+
+
+select * from memberO;
+
+insert into memberO values('cream','of');
+-> ORA-02290: check constraint (SYSTEM.OC02) violated
+-----------------------------------------------
+
+=> 생성 확인 
+-> desc memberC ;
+-> select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('MEMBERC') ;
+	----------------------------------------------------------------
+	CONSTRAINT_NAME CONSTRAINT_TYPE TABLE_NAME
+	--------------- --------------- ---------------
+	CC03            C               MEMBERC
+	CC04            C               MEMBERC
+	CC01            P               MEMBERC
+	CC02            U               MEMBERC
+	----------------------------------------------------------------
+
+-> select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS
+    where Table_Name = 'MEMBERC' ;
+
+	----------------------------------------------------------------
+	CONSTRAINT_NAME COLUMN_NAME     TABLE_NAME
+	--------------- --------------- ---------------
+	CC03            NAME            MEMBERC
+	CC04            WEIGHT          MEMBERC
+	CC01            ID              MEMBERC
+	CC02            PASSWORD        MEMBERC
+	----------------------------------------------------------------
+
+=> Test Data 입력
+-> insert into memberC values('banana', '12345', '홍길동', 'D','1999-09-09',1000,66.77);
+
+** 제약조건 Test
+
+=> unique Test
+insert into memberC values('apple', '12345', '홍길동', 'D','1999-09-09',1000,66.77);
+-> ORA-00001: unique constraint (SYSTEM.CC02) violated
+    insert into memberC values('apple', '12346', '홍길동', 'D','1999-09-09',1000,66.77);
+
+=> check Test
+insert into memberC values('melon', '12347', '홍길동', 'D','1999-09-09',1000,366.77);
+-> ORA-02290: check constraint (SYSTEM.CC04) violated
+    insert into memberC values('melon', '12347', '홍길동', 'D','1999-09-09',1000,49.77);
+ 
+=================================================
+
+3)  테이블 구조변경 (필드 추가 , 수정, 이름변경, 삭제)
+
+-------------------------------------------------
+=> alter table table명 add 컬럼명 타입 ;
+=> alter table table명 modify 컬럼명 타입 ;
+	( 컬럼크기, 컬럼타입, not null 부여 )
+=> alter table table명 rename column 컬럼명 to new컬럼명  ;
+=> alter table table명 drop column 컬럼명  ;
+-------------------------------------------------
+
+** DROP
+
+=> 실습 : point필드삭제, item 상품필드추가 
+
+=> 컬럼 삭제 : point필드삭제
+alter table ordert drop column point ; 
+select * from ordert ; 
+
+alter table mystu drop column pay ;
+select * from mystu ; 
+
+-----------------------------------------------------------------------
+** ADD 
+
+=> 제약조건 추가 
+	alter table mymember add primary key (id) ;
+	
+=> 컬럼 추가 :
+=> mystu에 주소 추가 :  address varchar2(10)
+     alter table mystu add address varchar2(10) default '경기도' ;
+
+-> alter table member add test number(10) ;
+
+item varchar2(10)   상품필드추가
+alter table ordert add item varchar2(10) ;
+select * from ordert ; 
+ 
+insert into ordert values('0006','coffee',sysdate,70000,'phone');
+insert into ordert values('0007','coffee',sysdate,70000,'phone');
+-> ORA-00001: 무결성 제약 조건(SYSTEM.cc01)에 위배됩니다 -> item 의 unique조건
+
+desc ordert ;  
+// => table 의 구조를 표시함.
+// describe : 묘사하다, 서술하다, 분석표
+
+-----------------------------------------------------------------------
+** RENAME 
+
+=> 컬럼명 수정 
+( custno => custid 로 변경하기 )
+alter table ordert RENAME COLUMN custno to custid;
+
+=> address -> juso 변경
+alter table mystu rename column address to juso ;
+
+-----------------------------------------------------------------------
+
+** MODIFY
+ 
+=> 컬럼 Type 수정
+
+-> 실수형-> 정수형 으로 변경 
+   ( price 를 number(15) 로 )
+alter table ordert modify price number(16) ;  
+
+-> alter table member add test number(10) ;
+    alter table member modify test number(20) ;  
+
+-> 실수형-> 문자형 으로 변경
+alter table ordert modify price varchar(15) ; 
+-> 두 경우 모두 오류 ORA-01439: 데이터 유형을 변경할 열은 비어 있어야 합니다
+-> 컬럼의 값이 있는 경우 오류
+
+-> data 값 지우고 test
+update ordert set price=0 ;  => 그래도 modify 불가능
+
+alter table ordert modify price number(15,2)  null ;  
+update ordert set price='' ;
+alter table ordert modify price varchar(15) ;  (변경 성공)
+
+-> 정수 -> 문자 
+alter table memtest1 modify point varchar2(10) ;  
+-> 컬럼의 값이 있는 경우 오류
+
+-> 문자형 -> 정수형으로  ( null 값을 가질 수 있는 item 으로 test )
+update ordert set item='' ;
+
+alter table ordert modify item number(10) ;  
+ 테이블이 변경되었습니다.  (OK)
+
+-> 문자 -> 문자 (확장) 
+alter table ordert modify custid varchar2(20) ;  
+alter table mystu modify juso varchar2(80) ; 
+alter table mystu modify juso varchar2(8) ; 
+-> ORA-01441: cannot decrease column length because some value is too big
+
+select * from mystu ;
+insert into mystu values(1111, '홍', 'a', '서울' ) ;
+=> alter table mystu modify sno number(4) primary key ; 
+
+=================================================
+4)  테이블명 변경
+   rename 원래이름 to 변경이름
+	=> rename ordert to myorder ;
+		select * from mymember ;
+	=> alter table myorder rename to banana ;
+
+=> rename mystu to banana ; 
+
+
+*** 테이블 목록 표시
+select * from user_tables ;
+select * from tab ;
+
+=================================================
+
+5) 테이블 삭제
+=> truncate , drop
+
+truncate table memtest2 ;
+truncate table scoret ;
+
+-> 테이블이 잘렸습니다.
+
+-> data 만 삭제됨 
+-> DDL 이므로 rollback 안됨 
+   (조건 없이 모든 데이터를 delete 하는것과의 차이점)
+
+select * from memtest2 ;
+insert into memtest2 values('a001','bnana 쿠키',1000); 
+
+drop table memtest3 ;
+-> 테이블이 삭제되었습니다.
+select * from memtest3 ;
+insert into memtest1 values('a001','bnana 쿠키',1000); 
+
+=================================================
+** 실습 : 팀별 프로젝트의 Table 을 이용해서 
+
+
+=> 제약조건(5가지) 을 반영해서 Table 생성문을 만들어 보세요.
+
+
+=> 제약조건 출력 하기.
+
+  
+=================================================
+---------------------------------------------------------
+*** 권한, role, view, index 확인 명령
+
+** 권한목록 보기
+
+select * from USER_TAB_PRIVS_MADE ;
+=> 현재 계정이 부여한 권한목록
+
+select * from USER_TAB_PRIVS_RECD ;
+=> 현재 계정에게 부여된 권한목록
+
+** 롤 확인 (롤 관련 데이터 딕셔너리)
+=> select * from DICT where TABLE_NAME LIKE '%ROLE%';
+=> select * from USER_ROLE_PRIVS ; (현재 계정에 부여된 롤)
+    - banana , system , sys 에서 모두 조회.비교 해보기
+
+** view 목록조회
+COLUMN view_name format a20;
+COLUMN text format a30;
+
+=> select view_name, text from USER_VIEWS ;
+
+** index 목록조회
+COLUMN INDEX_NAME format a15
+COLUMN TABLE_NAME format a15
+COLUMN COLUMN_NAME format a15
+
+( 컬럼명, 테이블명 등은 반드시 대문자 ) 
+
+=> select INDEX_NAME, TABLE_NAME, COLUMN_NAME from USER_IND_COLUMNS
+where TABLE_NAME IN ('MEMBER', 'BOARD') ;
+
+==================================================== 
+
+*** DML
+
+=> 데이터 입력, 수정, 삭제, 조회
+=> commit / rollback 적용
+----------------------------------------------------
+
+1) Table 레코드(row) 입력
+
+=> insert into 테이블명[(필드이름1, 필드이름2....)]  values (data1,data2...)
+=> insert into member(name, email, addr) values ('magic','magic@m.com','서울');
+     insert into member  values ('magic','magic@m.com','서울');
+
+2) Table 레코드(row) 수정 : : update문 (데이터의 필드값변경)
+
+=> update 테이블명 set 필드이름1=data1,필드이름2=data2 ..    [where 조건문]
+
+	=> person Test
+	update person set gender='A' ;  // 몽땅 수정됨
+	-> pKey 도 수정 가능 (무결성원칙 적용)
+  
+	=> update student set major='a' ; // 매우주의 해야함
+	     update student set major='a', pay=1000 where sno>4444 ; 	
+	   update tb1a set age=16 where name="이순신"; 
+	   update tb1a set age=16 where age >= 30 ; 
+
+	   update member set password=6789 where lev='B'; 	
+
+	=> member 테이블의 1학년 학생들 몸무게를 모두 90.5 로 수정하기. 
+		update member set weight=90.5 where hakbun like "_1%"; 
+
+	=> member 테이블의 2학년 김씨들 몸무게를 모두 300으로 수정하기. 
+		update member set weight=300 where hakbun like "_2%" and name like "김%"; 
+
+	=> 위의 나머지 2학년 몸무게를 모두 59.9 로 수정하기. 
+		update member set weight=59.9 where hakbun like "_2%" and name not like "김%"; 
+
+
+3) Table 레코드(row) 삭제 : : delete문 (레코드, row 삭제)   
+
+=> delete from 테이블명 [where 조건문]
+
+	=> delete from mystu ;  // 매우주의 해야함
+	   delete from tb1B where age=40;
+
+	=> delete from person ;  // 몽땅 삭제됨
+
+
+** 수정, 삭제 시에 where 조건 없으면 모든 데이터에 적용됨. (주의)
+
+----------------------------------------------------
+====================================================
+** 실습
+1) member table 과 동일한 구조와 데이터를 가지는 mymember table 만들기 
+=> create table mystu as select * from student ;
+
+2) mystu 의 sno 에 제약조건 primary key 부여하기 
+=> alter table mystu add primary key (sno) ;
+-> error : pkey 지정되지 않은 경우에는 중복된 sno 수정가능
+	update mystu set sno=7777 where sname='바나나';
+=> alter table mystu add primary key (sno) ;
+-> Table altered.
+
+ 
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints   where Table_Name in('MYFRIEND') ;
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS 
+where Table_Name = 'MYFRIEND' ;
+
+3) mymember에  address 필드 추가하고 '경기도 성남시' 입력하기
+=> alter table mymember add address varchar2(30) default '경기도 성남시' ;
+
+=> alter table mymember add address varchar2(30) ;
+   update mymember set address='성남시 금곡동' ;
+
+4) mymember에  weight 필드 삭제하기
+=> alter table mymember drop column weight ; 
+
+5) mymember의 lev 필드명 grade 로 변경하기
+=> alter table mymember RENAME COLUMN lev to grade;
+
+6) mymember table 이름을 myfriend 로 변경하기
+=> rename mymember to myfriend ;
+
+7) 테이블명 수정 후 UPLOADFILE 컬럼 삭제
+=> alter table myfriend drop column UPLOADFILE ; 
+=> select * from myfriend ;
+---------------------------------------------------- 
+====================================================
+4) SELECT  질의문(Query:DML) - Table 입력된 자료 확인 
+
+** select문(테이블의 레코드 검색)
+
+    select 필드리스트 
+    from 테이블명 
+    [where 조건] 
+    [group by 필드리스트]
+    [having 조건] 
+    [order by 필드리스트 [asc | desc]];
+    예) select * from member where addr like '%서울%'
+
+SQL> select   *  from  myfriend ;
+
+SQL>set linesize 1200 
+SQL>set pagesize 1200
+
+COLUMN point Format 9999 
+COLUMN name Format a10 
+COLUMN id Format a10 
+COLUMN lev Format a3
+
+** alias 사용하기
+-> table, field 
+	lev grade ( lev as grade )
+	select id, grade as 등급 from myfriend  ;
+	select id, grade 등급, birthd BirthDay from myfriend  ;
+	=> banana (ordert), myfriend Table 을 이용
+	   orderno , custid, name 출력하기
+
+	=> mystu  이용 hrader 에 번호, 이름, 학과, 급여 
+	select sno as 번호, sname 이름, major 학과, pay 급여 from mystu ;
+
+	select orderno , custid, myfriend.name from banana, myfriend 
+			where banana.custid = myfriend.id ;
+
+	select orderno , custid 고객ID, m.name 고객성명 from banana b, myfriend m 
+			where b.custid = m.id ;
+
+=============================================
+
+
+** 산술 연산자 적용
+=> mystu 연봉 (pay*12) 출력하기
+     select sno,sname,pay, (pay*12) 년봉 from mystu ;
+
+-> select point+1000  as bonus from member ;
+-> myfriend 모두, id, point, 포인트의 10% 를 추가로 지급 , 변경된 포인트값 출력
+	select id, point, (point*0.1) bonuspoint, (point+(point*0.1)) from myfriend ;
+	-> 위의 값으로 table 의 point 값 변경하기
+	update myfriend set point = point+(point*0.1) ;
+ 
+-> select id, point ,   point*12  년합계  from member ;
+-> select id, point ,   point*12  년합계, point+weight  소계  from member ;
+-> select stuno, ko 국어, en 영어, mt 수학, (ko+en+mt) 합계, (ko+en+mt)/3 평균 from student;
+   개인(각 row)별 합계, 평균 을 출력하는 경우   	
+
+** 함수적용: 여러 row 들에 대한 column별 count, avg, sum, min, max 
+=> count(컬럼명) : 해당 컬럼에 값이 있는 row 의 갯수, 
+=> count(*) : 모든 row 의 갯수
+
+->복습1) student 에서 sno, sname, 보너스 ( 년봉(1년치 pay) 의 550% )  
+select sno, sname, pay, (pay*12)*5.5 보너스 from student ;
+
+-> 복습2) student 에서 반별로  반코드, 학생수, pay의 합계, 평균, 최소값, 최대값 출력하기  
+select major, count(*), sum(pay), avg(pay), min(pay), max(pay) from student group by major  ;
+
+select major, count(*), sum((pay*12)*5.5) 보너스합계 , avg((pay*12)*5.5) 평균   
+ from student group by major  having major > 'a' ;
+
+select major, count(*), sum((pay*12)*5.5) 보너스합계 , avg((pay*12)*5.5) 평균   
+ from student group by major  having count(*) > 3 ;
+
+---------------------------------------------
+MA   COUNT(*) 보너스합계       평균
+-- ---------- ---------- ----------
+a           4     178200      44550
+---------------------------------------------
+
+-> 복습3) student 에서 반별로  반코드, 반이름, 학생수, pay의 합계, 평균, 최소값, 최대값 출력하기 
+select s.major, m.mname, count(*), sum(s.pay) from student s, mcodet m 
+where s.major = m.major group by s.major, m.mname order by s.major ;
+
+---------------------------------------------
+MA MNAME    COUNT(*) SUM(S.PAY)
+-- ----------    ----------         ----------
+a  스마트웹            4          2700
+b  스마트JAVA       1            200
+c  스마트JSP          1            100
+---------------------------------------------
+
+
+
+-> select count(*), sum(pay), avg(pay), min(pay), max(pay) from mystu ;
+-> select count(*) , max(point), min(point), max(weight), min(weight) from member ;
+
+*** group 별로 함수 적용하기
+=> group 으로 지정하는 컬럼과 group 함수만 출력 컬럼으로 사용할 수 있음. 
+=> 학과별로 통계 출력 하기
+	
+	select major, count(*), sum(pay), avg(pay), min(pay), max(pay) from mystu group by major ;
+	select major, sname, count(*), sum(pay), avg(pay), min(pay), max(pay) from mystu group by major ;
+	-> ORA-00979: not a GROUP BY expression
+
+
+-> select grade, count(*), sum(point), avg(point), min(point), max(point) from myfriend group by grade;
+   select grade, count(*), sum(point), avg(point), min(point), max(point) from myfriend group by grade order by grade;
+
+-> select lev, count(*) , max(point), min(point), max(weight), min(weight) from member  group by lev;
+
+** Concatenation (연결) 연산자  || 
+=> select sno || sname, major, pay || '만원' from student ;
+     select sno, sname, major, pay || '만원' spay  from student ;
+
+=> select id, name || address address from myfriend  ;
+=> select id, grade || '등급 ' || name from myfriend  ;
+
+select id, name, lev  || '등급   '  from member  ;
+select id || name, lev  || '등급', point  from member  ;
+select id || name, lev  || '등급' from member  ;
+
+=> 홍길동 씨의 id 는 ‘banana’ 입니다.    출력되도록 해 보세요 ~~ 
+=> column memberName format a19
+=> select name || ' 씨의 id 는 '''  memberName , Id || '''입니다.'  memberID from member ;
+=> select name || ' 씨의 id 는 ''' || Id || ''' 입니다.'  Name_ID from member ;
+
+===============================================
+
+** 다양한 where 조건
+
+*  조건주기
+=> 관계연산자(>,<,>=,<=,==,!=) , 집합연산자 (and , or)등	
+-> mystu 에서 pay 500 부터 4000 까지 출력하기
+	select * from mystu where 500 <= pay and pay <= 4000 ; 
+-> mystu 에서 pay 500 이상 4000 이하 까지 출력하기
+	select * from mystu where 500 <= pay and pay <= 4000 ; 
+-> mystu 에서 pay 500 보다크고 4000 보다 작은 값 출력하기
+	select * from mystu where 500 < (pay*12) and (pay*12) < 4000  order by sname desc; 
+
+	select sno, sname, pay*12 ypay  from mystu where 500 < ypay and ypay < 4000 ; 
+	ORA-00904: "YPAY": invalid identifier
+	( where 에서 컬럼의 alias 사용불가 ) 
+
+	select * from tb1a where name="이순신";	
+	select * from tb1a where age=40;
+
+-> select * from member where   1000 > point  and  point >= 100;
+-> member 의 weight 가 80 이상 또는 50 이하 인 member 출력하기
+    select * from member where weight >= 80  or  weight <= 50 ;
+-> member 의 point 가 1000 이상 또는 10 이하 인 member 출력하기
+    select * from member where point >=1000 or point <=10 ;
+
+
+
+
+* 표시범위 제한 (MySQL)
+	select * from member  LIMIT 3 ;
+	
+* 중복된 데이터 제외  DISTINCT -> 결과적으로 group by 와 유사 
+	=> 아래 3구문을 비교해 보세요 ~~	
+	select major, sname from student order by major ;
+	select DISTINCT major, sname from student order by major ;
+	select DISTINCT major from student  order by major ;
+
+	select id, name, lev from member ;
+	=> select DISTINCT age from tb1a ;
+	-> select  DISTINCT lev from member ;
+	=> select DISTINCT age, name from tb1a ;
+	    select DISTINCT lev, name from myuser ;
+
+
+* AND => age 가 10대인 자료 검색 , point 가 1000 대인 자료  (1000 ~ 1999)
+	select * from tb1a where age >=10 and age < 20 ;
+	select id, point  from myfriend where (1000 <= point <=1999) ; (X) 
+	select id, point  from myfriend where point>= 1000 and point < 2000 ;
+				
+* OR =>  mystu 에서 pay 500 보다 작고 동시에  4000 보다 큰 값 출력하기 (X)
+	-> mystu 에서 pay 500 보다 작거나 4000 보다 큰 값 출력하기
+	    select * from mystu where 500 > pay or pay > 4000  order by sname desc; 
+	-> mystu 에서 pay 500 미만 이거나 5000 이상인 값 출력하기
+	    select * from mystu where 500 > pay or pay >= 5000  order by sname desc; 
+
+
+
+	age 가 10미만 이거나 35 이상인 자료 검색 , 
+	select * from tb1a where age <10 or age >= 35 ;
+
+	point 가 1000 미만 이거나 10000 이상인 자료 검색
+	select * from myfriend where point <1000 or point >= 10000 ;
+
+* NOT => not , <> , != 
+=> major 가 'a' 아닌 자료 출력
+
+	-> select * from mystu where major not 'a' ;  (X)
+	     ORA-00920: invalid relational operator
+	     select * from mystu where not major='a' ; (O)
+
+	->  select * from mystu where major <> 'a' ;	
+	->  select * from mystu where major != 'a' ;
+
+	등급이 'D' 아닌 회원 출력
+	select id, grade from myfriend where grade <> 'D' ;
+	select id, grade from myfriend where grade != 'D' ;
+	select id, grade from myfriend where not grade = 'D' ;
+
+* BETWEEN  100 AND 200
+=> mystu 에서 pay 300 부터 5000 까지 출력하기
+	select * from mystu where pay between 300 and 5000 ;
+	select * from mystu where major between 'b' and 'c' ;
+
+=> point 가 1000 대인 자료
+        select id, point  from member where point >= 1000 and point < 2000 ;
+    -> select id, point  from myfriend where  point BETWEEN  1000 AND 1999 ;
+
+SQL> select  *  from  guest  where  pay  BETWEEN   100 AND 200  ;
+// 사번이 5000 번대 인사람 출력 BETWEEN 사용해서 ~  
+SQL> select  *  from  guest  where  sabun  BETWEEN   5000 AND 5999  ;
+// 사번이 1000 번대 부터  2000 번대 아닌 사람 출력  BETWEEN 사용해서 ~ 
+SQL> select  *  from  guest  where  sabun  not  BETWEEN   1000 AND 2999  ;
+
+* IN ( , , )
+=> major 가 'a' 또는 'c' 
+ 	select * from mystu where major IN ('a', 'c', 'j', 'k') ;	 
+
+=> lev 가 A, C, D 인 member 출력
+     select id, name, lev from member where lev='A' or lev='C' or lev='D' ;
+     select id, name, grade from myfriend where grade IN ('A' ,'B' ,'C') ;
+
+SQL>select  *  from  guest  where  title  IN ( ‘Coffee’, ‘Bank’,'card')  ;
+SQL>select  *  from  guest  where  title = ‘Coffee’ or  title = ‘Bank’ or  title ='card'  ;
+SQL>select  *  from  guest  where  title = ‘Coffee’ or ‘Bank’ or 'card'  ; => Error
+
+* LIKE : 퍼지검색 ( % : 임의의 문자열 / _ : 임의의 한글자, 한글도 한글자로 인정 )
+
+	=> id 중에 2번째 알파벳이 a 인 자료 검색
+	select id, name from myfriend where id Like '_a%' ;	
+	
+	=> 성이 오씨 만 검색
+	select * from mystu where sname LIKE '오%' ;
+	select id, name from myfriend where name LIKE '김%' ;  
+	
+	=> id 의 마지막 알파벳이 'e' 인자료 검색
+	select * from member where id like '%e' ;	
+ 
+	=> 이름중에 '길' 이 포함된 자료 검색
+	select * from mystu where sname LIKE '%오%' ;
+	select * from mystu where sname LIKE '_오%' ;
+	select * from mystu where sname LIKE '_길%' ;
+	select * from mystu where sname LIKE '%길' ;
+
+	select id, name from myfriend where name LIKE '%길%' ; 
+	select id, name from myfriend where name LIKE '_길%' ; 
+	select id, name from myfriend where name LIKE '%김%' ; 
+	select id, name, lev from member where name LIKE '홍%' ;
+	=> board 에서 title 에 Spring 이 포함된 자료 출력하기 
+	select seq, title from board where title like '%Spring%' or title like '%스프링%';
+	select id, name, lev from member where id LIKE '%java%' ;
+	select id, name, lev from member where id LIKE '%m%' ;
+
+	=> 성이 홍씨 아닌 자료만 검색 (Not 의 위치)
+	select * from mystu where  NOT sname  LIKE '오%' ;  (O)
+	select id, name from myfriend where name NOT LIKE '홍%' ;  (O)
+	
+	select id, name, lev from member where name  NOT LIKE '김%' ;	
+	
+	=> 2학년만 검색
+	select * from tb1a where number LIKE '_2%' ;
+	
+	=> 전체학생중 해킹반은 모두 검색
+	select * from tb1a where number LIKE 'H%' ;
+
+	=> 1학년 해킹반 검색 
+	select * from tb1a where number LIKE 'H1%' ;
+
+	
+	
+
+* is NULL / is Not NULL
+	
+	select * from mystu where pay Is NULL ;
+	select * from mystu where pay = NULL ;  (X)
+	select * from mystu where pay Is Not NULL ;
+
+	select id, name, password from myfriend where password Is NULL ;
+	select id, name, password from myfriend where password Is Not NULL ;
+
+** 순서 정렬 
+	( default : ascending )
+	select id, name, password from member order by id ;
+
+* 오름차순 
+	=> 복수 컬럼 적용가능  
+	select major, sname, sno, pay  from mystu order by major asc, sname desc;
+	
+	=> id 의 오름차순 출력
+	select id, name from myfriend order by id ;
+	=> name 의 내림차순 출력
+	select id, name from myfriend order by name desc ;
+
+	select age, name from tb1a order by age ;
+	= select age, name from tb1a order by age ASC;
+
+* 내림차순 
+	select age, name from tb1a order by age DESC;
+
+* 표시범위 제한 (MySQL)
+	select age, name from tb1a order by age DESC LIMIT 3 ;	
+	=> 나이순 내림차순으로 위에서 3건 표시
+
+* where 조건과 같이 사용가능
+	select * from tb1a where age<20 order by age ;
+
+	=> 새싹 등급만 id의 desc 순으로
+	select id, name, grade from myfriend where grade='D' order by id desc;
+
+=================================================

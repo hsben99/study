@@ -1,0 +1,173 @@
+*** Spring FileUpLoad 기능 
+
+1.  Table 구조 변경
+
+=> member Table member 사진 필드 추가하기
+
+*** oracle 접속
+
+sqlplus system/oracle
+conn system/oracle
+
+SQL> select * from tab ;
+SQL> desc member ;  
+SQL> select * from member ;
+----------------------------------------
+SET Linesize 1200  
+SET Pagesize 1200 
+COLUMN id Format a10 
+COLUMN password Format a10
+COLUMN name Format a10
+COLUMN lev Format a5
+COLUMN addr Format a10
+COLUMN birthd Format a10
+COLUMN point Format 99999
+COLUMN weight Format 999.99
+COLUMN uploadfile Format a10 
+----------------------------------------
+
+// 화일명 필드 추가 하기  varchar2(50) 로 
+alter table member add (uploadfile varchar2(100));
+
+// 화일명 필드에 이미지 url  추가하기
+update  member  set uploadfile = 'resources/uploadImage/bbb.gif' ;
+update  member  set uploadfile = 'resources/uploadImage/aaa.gif' where id >'k' ;
+update  member  set uploadfile = 'resources/uploadImage/ccc.gif' where id >'k' ;
+
+select * from member ;
+
+=> vo, dao( or mapper), 수정
+
+=>  memberList.jsp 수정 Test 
+--------------------------------------------------------------------------------------------
+=========================================================
+
+2. insertForm, getMemberList , memberMapper.xml 수정
+
+=> <form action="/Spring03/insert.do" method="post" 
+		enctype="multipart/form-data">
+
+=> method="post" : 255 byte 이상 대용량 전송 가능 하므로 
+=> enctype="multipart/form-data" : 화일 upload 를 가능하게 해줌
+
+=><input> tag  추가
+
+	<tr height="40">
+		<td bgcolor="gray" width="100" align="center">업로드</td>
+		<td align="left">
+		<input name="uploadfile" type="file" value=""/></td>
+	</tr>
+
+3. memberVO 수정
+	=> 멤버필드 uploadfile , getter, setter 추가
+	---------------------------------------
+	private String uploadfile ; // Table save FileName
+
+    	private MultipartFile uploadfilef ;
+	// form 으로부터 읽어 오기 위한 filename 필드 
+
+
+
+	public MultipartFile getUploadfilef() {
+		return uploadfilef;
+	}
+	public void setUploadfilef(MultipartFile uploadfilef) {
+		this.uploadfilef = uploadfilef;
+	}
+	
+   	public String getUploadfile() {
+   		return uploadfile;
+   	}
+   	
+   	public void setUploadfile(String uploadfile) {
+   		this.uploadfile = uploadfile;
+   	}
+	
+	---------------------------------------
+
+	=> MultipartFile Type 은 UpLoad 된 화일을 저장 하기 위해 필요한 타입이며
+	    실제 DB 에는 경로와 화일명이 String Type 으로 보관됨.
+	    그러므로 이에 대한 처리가 필요함
+	=> 별도의 String Type uploadfile 필드 추가 하여 사용함
+	=> MemberDAO, MemberDAOImp  수정필요없음
+	=> Membermapper.xml,  controller 수정	
+
+
+4. pom.xml 에 FileUpLoad 라이브러리 추가
+
+=> https://mvnrepository.com/
+
+	=> 			
+		<!-- FileUpload  -->	
+		<dependency>
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+			<version>1.3.1</version>
+		</dependency>
+
+	=> 추가 후 Maven Dependencies 에 
+	     commons-fileupload-1.3.1.jar ,  commons-io-2.2.jar  추가 확인
+
+5. MultipartResolver 설정
+
+=> 설정화일 servlet-context.xml 에 <bean> 등록
+
+	<beans:bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<beans:property name="maxUploadSize" value="100000" />
+	</beans:bean>
+
+=> id , name 변경 불가능 
+	( 대부분의  Resolver 로 끝나는 클래스의 경우에는 이미 정해져 있기 때문에 변경 불가능 하다 )
+=> maxUploadSize 는 지정하지 않으면 default 값은 -1 이며 크기 무제한 이 됨. 
+
+=> "/insert.do" 요청에 대해 스프링 컨테이너가  insertMember() 메서드를 호출해주며 이때 
+     인자로 지정된 memberVO 객체도 생성하여 전달 함.
+     이때 memberVO 객체 생성 전에 CommonsMultipartResolver 객체를 통해  MultipartFile 객체를 생성한다.
+
+=> MultipartFile 객체는 업로드한 파일에 대한 모든 정보를 가지고 있으며 이를 위한 메서드를 제공한다.
+        String getOriginalFilename()   /  void transferTo(File destFile)  /  boolean isEmpty()  
+
+6. Controller 의 insert, update 메서드에 FileUpLoad 코드 추가 및 수정 
+
+	@RequestMapping("/insert.do")
+	public ModelAndView insertMember(HttpServletRequest request, MemberVO vo,
+					ModelAndView mav) throws IOException {
+	~~~~~
+		// UploadFile 처리
+		MultipartFile uploadfile = mvo.getUploadfile() ; 
+		String filename1, filename2 = "No Image" ;
+		if (!uploadfile.isEmpty()) {
+			filename1 = "C:/MTest/myW/Spring02/src/main/webapp/resources/uploadImage/" 
+							+ uploadfile.getOriginalFilename() ;
+			uploadfile.transferTo(new File(filename1)); // 드라이브에 저장되는 경로
+			filename2 = "/Spring02/resources/uploadImage/" 
+						+ uploadfile.getOriginalFilename() ;  // member Table에 저장되는 경로
+		}
+		mvo.setUploadfiles(filename2);
+		mvo.setLev("D");
+	
+		int cnt = mDAO.mInsert(mvo) ;
+	~~~~~~
+
+
+*******************************************************************************
+*** Image Upload 시  선택한 Image 표시하기
+=> https://foreachdreamcometrue.tistory.com/6
+
+
+<td><input type="file" name="uploadfilef" id="gdsImg"><br><br>
+	<div class="select_img"><img src="" /></div>
+	 <script>
+ 		$("#gdsImg").change(function(){
+   		if(this.files && this.files[0]) {
+    		var reader = new FileReader;
+   			 reader.onload = function(data) {
+    		 $(".select_img img").attr("src", data.target.result).width(200);        
+   		 }
+   		 reader.readAsDataURL(this.files[0]);
+  		}
+  		});
+ 	</script>
+</td>
+
+******************************************************************************* 

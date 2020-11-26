@@ -1,0 +1,24 @@
+
+** 게시판 관리 ***
+
+=> 서버프로그램 포트폴리오 과제
+=> 7월 14일(금) 제출 본인의 공유폴더에 폴더명 board
+
+1. Member - Vo , Dao , JDBCUtil , 
+	  - 조회 : MemberList , GetMember
+	  - 관리 : Insert , Update , Delete - Servlet 이용하여 MemberController 구현
+
+2. Board    - Vo , Dao , JDBCUtil , 
+	  - 조회 : BoardList , GetBoard
+	  - 관리 : Insert , Update , Delete 
+	  - BoardController 구현 : Simple FrontController 방식으로 
+ 
+=> 추후 Upgrade
+
+3. Login ~+ 1. + 2. + ~ Logout 까지 연결 
+	- login 후에 글등록 가능
+	- 본인이 작성 한 글 만 Board Update , Delete 가능
+
+
+
+

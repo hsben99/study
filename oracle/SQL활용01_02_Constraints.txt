@@ -1,0 +1,666 @@
+=====================================================
+
+*** @ c:\Mest\sql001.txt  => 자동실행 가능
+*** GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기
+*** edit c:\MTest\boardset.txt   메모장으로 열기
+ 
+sqlplus system/oracle
+conn  system/oracle
+
+set linesize 100
+set pagesize 100
+COLUMN price Format 999999 ;
+
+COLUMN id Format a10 ;
+COLUMN password Format a10 ;
+COLUMN birthd Format a10 ;
+COLUMN name Format a10 ;
+COLUMN point Format 99999;
+COLUMN weight Format 99999;
+
+
+COLUMN sno Format 999999 ;
+
+COLUMN mname Format a10 ;
+COLUMN major Format a5 ;
+
+COLUMN code Format a10 ;
+
+
+
+COLUMN address Format a15 ;
+
+COLUMN point Format 99999;
+COLUMN weight Format 99999;
+
+COLUMN id Format a10 ;
+COLUMN title Format a15 ;
+COLUMN seq Format 999 ;
+COLUMN content Format a20 ;
+COLUMN regdate Format a12 ;
+
+COLUMN root Format 999 ;
+COLUMN step Format 999 ;
+COLUMN indent Format 999 ;
+
+COLUMN username Format a15 ;
+COLUMN granted_role Format a20 ;
+
+COLUMN Constraint_Name Format a15 ;
+COLUMN Column_Name Format a15 ;
+COLUMN Constraint_Type Format a15 ;
+COLUMN Table_Name Format a15 ;
+
+select * from board ;
+select * from member ;
+=================================================
+
+=================================================
+*** 제약조건 Constraints ***
+=================================================
+-------------------------------
+*** 1. 5가지 기본 조건
+-------------------------------
+1) PRIMARY KEY , p
+	: NOT NULL & UNIQUE
+2) FOREIGN KEY , r     // FOREIGN : 대외적인
+3) NOT NULL , c
+4) UNIQUE  , u
+	: 중복 불가 (유일성 조건)
+5) CHECK  , c
+	: 저장 가능한 데이터의 값의 범위나 조건을 지정하여 설정한 값만을 허용
+	( MySQL 적용 안됨 )
+
+=> DEFAULT  (부여할 수 있지만, 제약조건에 속하지는 않음)
+
+---------------------------------------------------
+*** 2. 제약조건 생성
+-------------------------------
+=> Constraint name
+	-> 부여
+	-> 부여하지 않는 경우 :  system이 정의함,  Constraint 키워드 생략가능
+
+=> 제약조건 정의 위치 
+     * 컬럼레벨 제약조건 지정
+	-> 컬럼정의 와 동시에 설정 
+     * 테이블레벨 제약조건 지정
+	-> 컬럼정의 후 제약조건 설정
+	-> 복합키 적용시에 필요 (복합키는 컬럼레벨로는 불가능함)
+	-> NOT NULL 속성은 적용 불가능 (NOT NULL 속성은 컬럼레벨로 정의)
+-------------------------------
+1) Constraint name 부여
+
+1.1)  컬럼레벨 제약조건 지정 : 컬럼정의 와 동시에 설정
+=> Parent Table ( Primary key  Constraints 설정 )
+
+create  table member (    
+id varchar2(10) Constraint cc01 PRIMARY KEY ,
+password varchar2(10) Constraint cc02 UNIQUE,
+name varchar2(30) Constraint cc03 NOT NULL,
+lev varchar2(2) DEFAULT 'D',
+birthd varchar2(10) ,
+point number(10) DEFAULT 100 ,
+weight number(5,2) Constraint cc04 CHECK(weight BETWEEN 30 AND 200) ); 
+                -> 999.99
+---------------------------------------------------
+=> Child Table ( Foreign key  Constraints 설정 )
+
+create  table board (    
+seq number(5) constraint c01 primary key ,
+title varchar2(200),
+id varchar2(10) constraint c02 REFERENCES member(id),      
+  -> constraint c02 뒤에 FOREIGN KEY(id)  생략됨
+content varchar2(2000),
+regdate  date default sysdate,
+cnt number(5) default 0 ) ; 
+
+---------------------------------------------------
+=> 생성 후 자료 각 5개씩 입력하기
+
+insert into member values('banana','12345!','홍길동','D','1990/09/09',100,45.5); 
+insert into member values('apple','12346!','김길동','A','1980/09/19',100,75.5); 
+insert into member values('orange','12347!','오길동','B','1970/01/01',100,65.5); 
+insert into member values('melon','12348!','','B','1970/01/01',100,65.5);  // name not null
+insert into member values('melon','12348!','민길동','B','1970/01/01',100,25.5);  // weight check
+
+insert into member values('melon','12348!','민길동','1970/01/01',45.5);  // default -> 값의수가 충분치 않음
+insert into member values('melon','12348!','민길동','','1970/01/01',0,45.5);  // default -> 현재의 값이 입력됨
+insert into member (id,password,name,birthd,weight)  values('default','12349!','민길동','1970/01/01',45.5);  // default 적용됨
+
+insert into board values(1,'Oracl 배우기','banana','number(p,s) : 소수점 미포함 전체 자리수',sysdate,0); 
+insert into board values(2,'Oracl 배우기2','banana','오라클 은 쉽습니다~~',sysdate,0); 
+insert into board values(3,'Oracl 배우기3','banana','오라클 은 어렵습니다~~',sysdate,0); 
+
+insert into board values(4,'Oracl-참조키','black','오라클 은 어렵습니다~~',sysdate,0); 
+=> ORA-02291: 무결성 제약조건(SYSTEM.SYS_C0011060)이 위배되었습니다- 부모 키가 없습니다
+insert into board values(4,'Oracl-참조키','apple','오라클 은 어렵습니다~~',sysdate,0);
+
+=> 참조 키 Test
+-> member 에서  banana 수정해보기
+    update member set id='flower' where id='banana';
+    delete member where id='banana' ;
+    -> ORA-02292: 무결성 제약조건(SYSTEM.SYS_C0011060)이 위배되었습니다- 자식 레코드가 발견되었습니다
+
+-> 해결 : 자식 레코드를 삭제한 후 update,  delete 한다.  (apple)
+    delete board where id='apple' ;
+    update member set id='pineApple' where id='apple'; // pkey 도 수정가능
+    delete member where id='pineApple' ;   // value 대소문자 구별
+     
+    	
+
+
+-----------------------------------
+1.2)  테이블레벨 제약조건 지정 : 컬럼정의 후 제약조건 설정
+
+=> 부모 테이블 
+      CREATE TABLE parent(
+         parent_id NUMBER(10),
+         parent_name NVARCHAR2(20) NOT NULL,
+         phone VARCHAR2(13),
+         CONSTRAINT pk_parent_id PRIMARY KEY(parent_id, phone)
+      );
+
+
+=> 자식 테이블 
+   -> ON DELETE CASCADE : 부모가 지워지면 해당되는 자식도 지워진다. (참조 무결성 제약조건)
+
+      CREATE TABLE child(
+         child_id NUMBER(10),
+         parent_id NUMBER(10),
+         child_price NUMBER(10),
+         CONSTRAINT fk_parent_id FOREIGN KEY(parent_id) 
+         -> 제약조건       제약조건명   외래키설정(필드명) :  필드명에는 외부 테이블의 어떤값이 입력된다
+         REFERENCES parent(parent_id) 
+         -> 위의 어떤값이  parent 테이블의  parent_id 필드의 값이다
+         ON DELETE CASCADE
+      );
+
+--------------------
+=> Data 입력 후 Cascade Test
+insert into parent values(0001, '가나다','010-1234-1234') ;
+insert into parent values(0002, '김나다','010-1234-1234') ;
+insert into parent values(0003, '이나다','010-1234-1234') ;
+
+insert into child values(1111, 0001,90000) ;
+insert into child values(1112, 0001,90000) ;
+insert into child values(1113, 0001,90000) ;
+insert into child values(1114, 0002,90000) ;
+insert into child values(1115, 0003,90000) ;
+
+-> delete Test
+delete parent where parent_id=2 ;    // child 1114 번도 동시에 삭제
+delete parent where parent_id=1 ;    // child 모두 삭제 
+
+-> child 가 있는 parent update Test
+update parent set parent_id =9 where parent_id =3 ;
+-> ORA-02292: 무결성 제약조건(SYSTEM.FK_PARENT_ID)이 위배되었습니다- 자식 레코드가 발견되었습니다
+
+=========================
+
+2) Constraint name 부여하지 않는 경우
+=> Oracle System 에서 자동으로 부여함
+
+---------------------------------
+2.1) 컬럼레벨 제약조건 지정 : 컬럼정의 와 동시에 설정   
+
+=> Parent Table ( Primary key  Constraints 설정 )
+
+create  table member (    
+id varchar2(10) PRIMARY KEY ,
+password varchar2(10) UNIQUE,
+name varchar2(30) NOT NULL,
+lev varchar2(2) DEFAULT 'D',
+birthd varchar2(10) ,
+point number(10) DEFAULT 100 ,
+weight number(5,2) CHECK(weight BETWEEN 30 AND 200) ); 
+
+---------------------------------
+=> Child Table ( Foreign key  Constraints 설정 )
+
+create  table board (    
+seq number(5) primary key ,
+title varchar2(200),
+id varchar2(10) REFERENCES member(id),
+content varchar2(2000),
+regdate  date default sysdate,
+cnt number(5) default 0 ) ; 
+
+-> 생성 확인
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS where Table_Name = 'BOARD' ;
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('BOARD') ;
+
+---------------------------------
+2.2)  테이블레벨 제약조건 지정 : 컬럼정의 후 제약조건 설정
+
+=> 부모 테이블 
+      CREATE TABLE parent(
+         parent_id NUMBER(10),
+         parent_name NVARCHAR2(20) NOT NULL,
+         phone VARCHAR2(13),
+         PRIMARY KEY(parent_id)
+      );
+
+
+=> 자식 테이블 
+   -> ON DELETE CASCADE : 부모가 지워지면 해당되는 자식도 지워진다. (참조 무결성 제약조건)
+
+      CREATE TABLE child(
+         child_id NUMBER(10),
+         parent_id NUMBER(10),
+         child_price NUMBER(10),
+         FOREIGN KEY(parent_id) REFERENCES parent(parent_id)
+         ON DELETE CASCADE
+      );
+
+==================================
+*** 제약 조건 적용  
+
+1) PRIMARY KEY 
+=> 단일 컬럼
+	-> 컬럼레벨:    id varchar2(10) PRIMARY KEY
+	-> 테이블레벨:  PRIMARY KEY(id) 
+
+=> 복합 컬럼
+     컬럼 레벨로 정의 하기는 불가능하므로 테이블 레벨로 정의 한다.
+	-> 아래 table 에서 이름과 핸드폰 번호를 PRIMARY KEY 로 지정 
+	-> create  table friend (    
+		name varchar2(30),
+		phone varchar2(16),
+		addres varchar2(100),
+		CONSTRAINT friend_pk PRIMARY KEY(name,phone));
+		
+lev varchar2(2) DEFAULT 'D',
+birthd varchar2(10) ,
+point number(10) DEFAULT 100 ,
+weight number(5,2) CHECK(weight BETWEEN 30 AND 200) ); 	
+
+------------------------------------
+2) check
+------------------------------------
+2.1) varchar2 에 check 부여 하기
+
+create  table memberT (    
+id varchar2(10) Constraint tc01 PRIMARY KEY ,
+lev varchar2(2) Constraint tc02 CHECK(lev BETWEEN 'A' AND 'D') ); 
+-> Table created.
+
+=> insert 확인 
+insert into memberT values('banana','A');
+insert into memberT values('apple','D');
+-> 1 row created.
+
+=> 오류 확인
+insert into memberT values('orange','K');
+-> ORA-02290: check constraint (SYSTEM.TC02) violated
+
+------------------------------------
+2.2)  check 로 'in' , 'out'  제한 하기
+
+create  table memberO (    
+id varchar2(10) Constraint oc01 PRIMARY KEY ,
+lev varchar2(3) Constraint oc02 CHECK(lev IN ('in','out') )); 
+-> Table created.
+
+=> insert 확인 
+insert into memberO values('orange','in');
+insert into memberO values('melon','out');
+
+insert into memberO values('cream','of');
+-> ORA-02290: check constraint (SYSTEM.OC02) violated
+
+---------------------------------------------------
+
+3) default  적용 주의사항
+=>  default 값을 적용 하려면 ... 
+
+create table student( 
+code char(1) primary key ,
+name varchar2(20) not null,
+score number(3) default 77 
+) ;
+ 
+insert into student values('a','자바') ;  (x) 
+insert into student (code,name) values('a','자바') ;  (o)
+ 
+---------------------------------------------------
+==================================
+-----------------------------------
+*** 3. 제약조건 확인, 수정, 삭제, 비활성화
+-----------------------------------
+
+---------------------------------
+1) 제약조건 확인
+
+=> user_Constraints, USER_CONS_COLUMNS 모두 사용 가능.
+
+set linesize 100 ;
+set pagesize 100 ;
+COLUMN Constraint_Name Format a15 ;
+COLUMN Column_Name Format a15 ;
+COLUMN Constraint_Type Format a15 ;
+COLUMN Table_Name Format a15 ;
+
+1.1) user_Constraints
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('MEMBER') ;
+---------------------------------------------------------------
+CONSTRAINT_NAME CONSTRAINT_TYPE TABLE_NAME
+--------------- --------------- ---------------
+SYS_C007007     C               ORDERT
+SYS_C007008     C               ORDERT
+SYS_C007009     P               ORDERT
+SYS_C007010     R               ORDERT
+---------------------------------------------------------------
+
+1.2) USER_CONS_COLUMNS
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS 
+where Table_Name = 'MEMBER' ;
+---------------------------------------------------------------
+CONSTRAINT_NAME COLUMN_NAME     TABLE_NAME
+--------------- --------------- ---------------
+SYS_C007007     ORDERDATE       ORDERT
+SYS_C007008     PRICE                ORDERT
+SYS_C007009     ORDERNO          ORDERT
+SYS_C007010     CUSTNO            ORDERT
+---------------------------------------------------------------
+
+---------------------------------
+2) 제약조건 수정
+
+2.1) ADD 
+
+=> alter table mymember add primary key (id) ;
+=> myboard 에 참조키 추가하기1.
+     alter table myboard add foreign key(id) references mymember(id) ;
+
+=> constraint 이름을 정의하며 추가하기 
+     
+     alter table mymember add constraint cc01 unique(point) ;
+    ->  unique 속성과 data type 과 부적합 (X)
+     alter table mymember add constraint cc01 unique(password) ;
+    ->  unique 속성과 data type 과 적합 (O)
+
+=> not null 추가시 주의 사항
+     alter table mymember add constraint cc02 not null(point) ;
+    -> not null 속성은 table level 속성이라서  add constraint 는 불가능하고,
+        column modify  로 가능함.			
+
+2.2) Modify
+
+=> myboard 에 참조키 추가하기2.
+     alter table myboard modify id varchar2(10)  references mymember(id) ;
+
+=> not null 추가
+     alter table mymember modify point number(10) not null ;
+
+---------------------------------
+3) 제약조건 삭제
+
+=> 제약조건의 이름 부여하면 편리
+    (그렇지 않으면 조회하여 확인 후 삭제 가능)	
+
+=> alter table ordert  drop constraint SYS_C004683 ;
+
+-> not null , check 삭제
+alter table member drop constraint cc03; 
+alter table member drop constraint cc04; 
+-> insert into member values('alter','11115!','','A','2000/09/09',0,20);
+
+->  not null 추가
+alter table member add constraint cc11 not null(name) ;    // add : XXX , modify: ooo
+-> alter table member modify name varchar2(30) constraint cc11 not null ;
+   ( 이전에 name 에 null 값을 가진 자료가 존재하면 적용안되어 오류 -> ORA-00905: 누락된 키워드 )
+-> 수정 또는 삭제 후  Test ( delete member where id='alter'; )
+
+-> wright 에 check 부여 ( ADD )
+alter table member add constraint cc22 check(weight between 25 and 200) ;  
+
+-> member 와  board  에  cascade 적용 
+    alter table board modify id varchar2(10) constraints cc33  references member(id)  on delete cascade ;
+   -> ORA-02275: 참조 제약이 이미 테이블에 존재합니다 
+   -> 제약조건 삭제 후 수정 
+       alter table board drop constraint SYS_C0011060; 
+
+---------------------------------
+4) 제약조건 비활성화 & 활성화
+
+=> 오라클에서는 제약조건을 삭제하지 않고 비활성화 하여 사용을 잠시 보류할 수 있도록 해줌
+=> 제약조건의 규칙 때문에 특별한 경우 작업 진행이 어려울때 사용.
+    ( 예: foreign key 가 설정된 경우 child data 가 존재하는 data는 삭제 불가능 )  
+
+4.1) 제약조건 비활성화 (Disable Constraint)
+=>  제약조건을 일시 비활성화 시켜줌 (반드시 다시 활성화 시켜주어야함)	
+  
+=> Alter table t_name DISABLE CONSTRAINT constraint_name;
+
+4.2) 제약조건 활성화 (Enable Constraint)
+=>  제약조건을 활성화 시켜줌 
+  
+=> Alter table t_name ENABLE CONSTRAINT constraint_name;
+
+-> insert into board values(4,'title ...','black','하하하하 호호홓 ...',sysdate,0);
+    ORA-02291: 무결성 제약조건(SYSTEM.CC33)이 위배되었습니다- 부모 키가 없습니다
+-> references 조건을 잠시 disable 후 insert 
+    Alter table board DISABLE CONSTRAINT cc33;
+-> references 조건을 잠시 enable 후 Test
+    Alter table board ENABLE CONSTRAINT cc33;
+    ORA-02298: 제약 (SYSTEM.CC33)을 사용 가능하게 할 수 없음 - 부모 키가 없습니다
+    delete board where id='black' ;
+
+==================================
+-----------------------------------
+*** 4. 활용 연습 
+-----------------------------------
+
+*** 실습 
+=================================================
+
+*** 제약조건 종합 연습
+=> 제약조건 이름, 5개 속성 연습 (referenced 제외) 
+
+create  table memberC (    
+id varchar2(10) Constraint cc01 PRIMARY KEY ,
+password varchar2(10) Constraint cc02 UNIQUE,
+name varchar2(30) Constraint cc03 NOT NULL,
+lev varchar2(2) DEFAULT 'D',
+birthd varchar2(10) ,
+point number(10) DEFAULT 100 ,
+weight number(5,2) Constraint cc04 CHECK(weight BETWEEN 30 AND 200) ); 
+
+-----------------------------------------------
+
+** 참고사항 --------
+insert into memberO values('melon', sysdate+3,'out');
+v3 = sysdate+i  //  현재부터 3일 후 
+sql= "insert into memberO values('"   + v1 + "'," +v3+",'" + v2 + "')" ;
+----------------------- 
+-----------------------------------------------
+
+=> Test Data 입력
+-> insert into memberC values('banana', '12345', '홍길동', 'D','1999-09-09',1000,66.77);
+
+** 제약조건 Test
+
+=> unique Test
+insert into memberC values('apple', '12345', '홍길동', 'D','1999-09-09',1000,66.77);
+-> ORA-00001: unique constraint (SYSTEM.CC02) violated
+    insert into memberC values('apple', '12346', '홍길동', 'D','1999-09-09',1000,66.77);
+
+=> check Test
+insert into memberC values('melon', '12347', '홍길동', 'D','1999-09-09',1000,366.77);
+-> ORA-02290: check constraint (SYSTEM.CC04) violated
+    insert into memberC values('melon', '12347', '홍길동', 'D','1999-09-09',1000,49.77);
+ 
+=================================================
+
+** 실습 : 팀별 프로젝트의 Table 을 이용해서 
+
+=> 제약조건(5가지) 을 반영해서 Table 생성문을 만들어 보세요.
+
+=> 제약조건 출력 하기.
+
+====================================================
+** 실습
+1) member table 과 동일한 구조와 데이터를 가지는 mymember table 만들기 
+=> create table mystu as select * from student ;
+
+2) mystu 의 sno 에 제약조건 primary key 부여하기 
+=> alter table mystu add primary key (sno) ;
+-> error : pkey 지정되지 않은 경우에는 중복된 sno 수정가능
+	update mystu set sno=7777 where sname='바나나';
+=> alter table mystu add primary key (sno) ;
+-> Table altered.
+ 
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints   where Table_Name in('MYFRIEND') ;
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS 
+where Table_Name = 'MYFRIEND' ;
+
+=================================================
+-----------------------------------
+*** 5. Foreign Key & Cascade 실습
+-----------------------------------
+
+1. Table 만들기
+
+=> member , board 를 이용하여 metest, botest 만들기
+	create table metest as select * from member ;
+	create table botest as select * from board ;
+
+2. 제약조건 확인
+=>user_Constraints : Constraint_Type 확인가능 
+    USER_CONS_COLUMNS : Column_Name 확인가능 
+
+COLUMN Constraint_Name Format a15 ;
+COLUMN Column_Name Format a15 ;
+COLUMN Constraint_Type Format a15 ;
+COLUMN Table_Name Format a15 ;
+
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('METEST') ;
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS 
+where Table_Name = 'METEST' ;
+
+select Constraint_Name,  Constraint_Type, Table_Name from user_Constraints where Table_Name in('BOTEST') ;
+select Constraint_Name, Column_Name, Table_Name from USER_CONS_COLUMNS 
+where Table_Name = 'BOTEST' ;
+ 
+3. 제약조건 추가하기1
+=> metest 
+	- id : primary Key
+	alter table metest add primary key (id) ;
+
+=> botest
+	- seq : primary Key
+	alter table botest add primary key (seq) ;
+	- id : foreign key 
+	alter table botest add id REFERENCES metest(id);    (XXXX)
+	alter table botest modify id varchar2(10)  references metest(id) ;
+
+=> 추가후 Test : Parent Table 과 Child Table 이 서로 관련되어있음
+
+	test1) Child Table 에 Parent Table 에 없는 id 입력시 오류
+	insert into botest values  
+			((select nvl(max(seq),0)+1 from board)
+			,'title','cascade','글 내용',sysdate,0
+			,(select nvl(max(seq),0)+1 from board),0,0) ;
+	-> 1행에 오류:
+	ORA-02291: 무결성 제약조건(SYSTEM.SYS_C0011328)이 위배되었습니다
+	- 부모 키가 없습니다
+
+
+	tset2)  Child 가 있는 Parent 의 row 는  Delete 불가
+	- 확인 select seq, id from botest where id='banana';
+	- delete metest where id='banana';
+	-> 1행에 오류:
+	ORA-02292: 무결성 제약조건(SYSTEM.SYS_C0011328)이 위배되었습니다
+	- 자식 레코드가 발견되었습니다
+	
+	-> 해결 : botest 에서 banana 가 쓴 글을 삭제한 후 metest  에서  banana 를 삭제한다.
+	Cheld 삭제 후 : delete botest where id='banana';
+ 	Parent 삭제    : delete metest where id='banana' ;
+
+==================================================== 
+
+4. 제약조건 추가하기2 : ON DELETE CASCADE
+=> ON DELETE CASCADE : 부모가 지워지면 해당되는 자식도 지워진다. (참조 무결성 제약조건)
+
+=> botest
+	- id : foreign key 
+	** 앞서부여한 조건 삭제후 다시 수정 한다.
+	alter table botest  drop constraint SYS_C0011328 ;
+	
+	** 삭제 완료 후 재부여 	
+	alter table botest modify id varchar2(10)  references metest(id) ON DELETE CASCADE ;
+=> Test 
+	- apple 이 쓴 글이 있는지 확인
+	select id from botest where id='apple' ;   (5개)
+	
+	- metest 에서 apple 삭제
+	delete metest where id='apple';
+	-> 1 행이 삭제되었습니다.
+
+	select id from botest where id='apple' ;
+	-> 선택된 레코드가 없습니다.
+
+	** 확인 : 오류 없이 metest 삭제되고, botest 의 해당글도 같이 삭제됨
+
+5. 제약조건 비활성화 & 활성화 Test
+
+=> Alter table t_name DISABLE CONSTRAINT constraint_name;
+ 
+=> Alter table t_name ENABLE CONSTRAINT constraint_name;
+
+=================================================
+
+ Parent Table ( Primary key  Constraints 설정 )
+
+create  table test1 (    
+id varchar2(10) PRIMARY KEY ,
+name varchar2(30) NOT NULL,
+birthd varchar2(10) PRIMARY KEY); 
+ORA-02260: 테이블에는 하나의 기본 키만 가질 수 있습니다.
+create  table test2(    
+id varchar2(10),
+name varchar2(30),
+birthd varchar2(10),
+constraint pk_id primary key(id,birthd),
+constraint nn_name not null(id,birthd)
+); 
+ORA-00904: : 부적합한 식별자
+create  table test2(    
+id varchar2(10),
+name varchar2(30),
+birthd varchar2(10),
+constraint pk_id primary key(id,birthd)
+); 
+insert into test2 values('banana','바나나','0909');
+insert into test2 values('banana','바나나','0101'); //ok
+---------------------------------
+=> Child Table
+
+create table child1(
+seq number(5) primary key,
+id varchar2(10) references test2(id,birthd),
+title varchar2(20) );
+ORA-02256: 참조하고 있는 열의 숫자는 참조된 열의 수와 일치해야 합니다
+
+alter table test2 drop constraint pk_id;
+alter table test2 add primary key(id);
+
+create table child1(
+seq number(5) primary key,
+id varchar2(10) references test2(id),
+title varchar2(20) );
+
+insert into child1 values(1,'banana','test test');
+
+insert into child1 values(2,'brown','test test');
+ORA-02291: 무결성 제약조건(SYSTEM.SYS_C0011369)이 위배되었습니다- 부모 키가
+없습니다
+
+delete test2 where id='banana';
+ORA-02292: 무결성 제약조건(SYSTEM.SYS_C0011369)이 위배되었습니다- 자식 레코드가
+발견되었습니다
+
+create table child1(
+seq number(5) primary key,
+id varchar2(10) references test2(id) ON DELETE CASCADE,
+title varchar2(20) );

@@ -1,0 +1,159 @@
+
+** 1. 기본 게시판 만들기 (  ver01 , 2020.06.08)
+
+=> board Table (CRUD)
+=> Java : BoardVO, BoardDAO, BService(interface) , BServiceImpl, BoardController
+=> Jsp: boardList, boardDetail, boardInsert, boardUpdate
+
+=> menu 만들기
+-> home.jsp : BoardList, 
+
+-> boardList.jsp
+	* Login : 새글등록, Home
+		Title 을 클릭하면 글내용 보기 (boardDetail.jsp)
+	* Not Login : Login, Home
+
+-> boardDetail.jsp ( Login 이후)
+	* 내글인 경우  -> 글수정, 글삭제
+	* 내글 아닌 경우 -> BoardList, Home , 조회수 증가
+
+** 2. 조회수 증가, 댓글달기 (ver02)
+2.1) 조회수 증가
+=> 로그인 후, 내글 아닌글을 볼때
+=> countUp :  Controller의 bdetail 수정, Service, DAO  
+
+2.2) 댓글달기
+=> 로그인 후, 내글 남의 글에 모두 댓글달기 가능  
+=> board Table 1개 : table 수정 필요함
+
+--------------------------------------------------------------------------
+*** 댓글 1 단계
+
+** 1. 댓글 기능을 위한 board table 변경 **
+=> table, VO, DAO 수정
+=> 화면 흐름에따른 메뉴 추가 ( boardDetail.jsp 에 )
+
+원글표시 root, 댓글번호(출력순서) step , 댓글레벨 indent
+=> 원글 - root : 자신의 seq ,  step: 0 , indent: 0
+=> 첫댓글 - root : 원글의 seq ,  step: 1 , indent: 1  
+
+***  실습
+	seq   root  step   indent
+	10     10      0       0      원글
+	100    10      1       1     1 댓글
+	120     10     1        1    2 댓글
+
+***  11번글의 댓글의 step 의 값 => 12,16,13,15,14
+			    => 1, 2, 3, 4, 5 		
+
+
+select * from board ;
+
+( 컬럼추가 ) 
+alter table board add root number(5)  default 0 ; 
+alter table board add step number(5) default 0 ;
+alter table board add indent number(3) default 0 ;  
+
+( root 값에 자신의 seq 넣기 )
+update board set root=seq ; 
+
+commit ;
+
+---------------------------------------------------
+set linesize 100
+set pagesize 100
+
+COLUMN seq Format 99 ;
+COLUMN title Format a10 ;
+COLUMN id Format a10 ;
+COLUMN content Format a30 ;
+COLUMN regdate Format a12 ;
+COLUMN cnt Format 99 ;
+COLUMN root Format 99 ;
+COLUMN step Format 99 ;
+COLUMN indent Format 99 ;
+
+select * from board ;
+----------------------------------------------------
+
+** 부분 조회
+select seq, id, root, step, indent, rownum from board order by root desc;
+select seq, id, root, step, indent, rownum from board order by root desc, step asc;
+select id, seq, root  from board ;
+
+** 댓글 포함 List 출력순서 
+select seq, writer, root, step, indent from board order by root desc , step asc ;
+
+=> VO ,  DAO ( Insert  : 추가된 필드 3개를 위한 sql문 수정 )  1차 변경  
+
+( 컬럼삭제 => 필요시 사용 )
+alter table board drop column root ;
+alter table board drop column root1 ;
+alter table board drop column step ;
+alter table board drop column indent ;
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+***  jsp , Service , ServiceImpl , Controller 수정 :  2차 변경  
+
+** 1.   jsp 화일에 댓글 입력 기능을 위한 버튼 추가 
+	=> rinsertForm.jsp
+
+** 2.  댓글 입력화면 jsp 작성 / 저장 버튼 => breplyi   **
+
+** 3. Controller 수정 : 
+	=> bdetail  원글의 정보 session에 보관
+	=> breplyi  메서드 추가
+
+** 4.  DAO 변경 => 메서드 추가 ( SQL 문 수정 / blist , binsert )
+==================================================
+
+=> 강사PC  http://192.168.0.64:9090/green/
+ 
+*** 댓글 ver02 : 댓글 & 대댓글
+
+원글표시 root,  같은 부모하의 댓글들의 순서번호 step , 댓글레벨 indent
+
+=> 원글 - root : 자신의 seq ,  step: 0 , indent: 0
+
+=> 댓글 - root : 원글의 seq ,  indent: 부모+1  
+	 step: 부모+1  / 나머지는 댓글도 +1 (1씩 증가)
+
+=>1. Controller : detailBoard 수정
+	  session 에  root, step , indent 보관
+
+=>2. Controller : breplyInsert 수정
+	  vo 에  ++step , ++indent  값 setting
+
+=>3. Controller : replyBoard 수정
+	  getBoard_reply.jsp 원글 표시값 root 로 변경
+
+=>4. DAO 변경 
+
+** 5. 글수정 (이전과 동일)
+
+** 6. 글삭제  
+=> 원글 삭제시
+	-> 소속 댓글 모두 삭제
+	delete board where root=?
+=> 댓글 삭제시
+	-> 해당 댓글만 삭제
+	delete board where seq=?
+
+=> 원글인지 댓글인지 구별 가능해야 함. 
+	-> Controller or BoardDAO
+
+  
+=> Test : 강사PC 
+	http://192.168.0.102:8080/8080/green/ 
+	
+-------------------------------------------------------------------------------------------------
+
+** 3. Paging 1
+
+** 4. Paging 2
+
+
+
+
+
+

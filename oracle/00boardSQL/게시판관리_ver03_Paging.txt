@@ -1,0 +1,213 @@
+GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기
+edit c:\MTest\boardset.txt   메모장으로 열기
+@ c:\MTest\boardset.txt  => 자동실행 가능
+
+===============================================
+***  locking 해제
+
+=> sys접근함
+=> C:\Users\hb> sqlplus   / as sysdba  
+     또는 SQL>conn   / as sysdba
+
+=> SQL>alter user system(계정id) account unlock; 
+
+=> Lock 해제후 재연결
+	- conn system/oracle;
+===============================================
+
+** Board Table Create
+
+sqlplus system/oracle
+
+select * from tabs ;
+
+create  table board (    
+seq number(5) primary key ,
+title varchar2(200),
+id varchar2(20),
+content varchar2(2000),
+regdate  date default sysdate,
+cnt number(5) default 0 ) ; 
+
+*** 댓글 board
+
+create  table board (    
+seq number(5) primary key ,
+title varchar2(200),
+id varchar2(10),
+content varchar2(2000),
+regdate  date default sysdate,
+cnt number(5) default 0,
+root number(3)  default 0,
+step number(3) default 0,
+indent number(3) default 0
+ ) ; 
+
+set linesize 100
+set pagesize 100
+
+COLUMN seq Format 99 ;
+COLUMN title Format a10 ;
+COLUMN id Format a10 ;
+COLUMN content Format a30 ;
+COLUMN regdate Format a12 ;
+COLUMN cnt Format 99 ;
+COLUMN root Format 99 ;
+COLUMN step Format 99 ;
+COLUMN indent Format 99 ;
+
+select * from board ;
+
+COLUMN id Format a10 ;
+COLUMN password Format a10 ;
+COLUMN name Format a10 ;
+COLUMN birthd Format a12 ;
+COLUMN lev Format a5 ;
+
+select * from member ;
+
+insert into board values
+(1, 'Spring 이란?','javasam','처음엔 복잡하고 난해하지만 친해지면 매우 편리하다',sysdate,0,1,0,0); 
+
+insert into board values
+(2, '의존성 주입?','hongsam', 'dependency injection_객체간의 의존관계를 객체 자신이 아닌 외부의 조립기가  수행한다.',sysdate,0,2,0,0); 
+
+insert into board values
+(3, '느슨한 결합(loose coupling)', 'banana','객체는 인터페이스에 의한 의존관계만을 알고 있으며 이 의존관계는 구현 클래스에 대한 차이를 모르는채 서로 다른 구현으로 대체가 가능',sysdate,0,3,0,0); 
+
+insert into board values
+(4, 'Spring의 DI 지원','apple','Spring Container가 DI 조립기(Assembler)를 제공',sysdate,0,4,0,0); 
+
+insert into board values
+(5, 'Spring 설정파일','coffee','Spring Container가 어떻게 일할 지를 설정하는 파일',sysdate,0,5,0,0); 
+
+insert into board values
+((select nvl(max(seq), 0)+1 from board), 'Spring 설정파일','banana','Spring Container가 ...파일',sysdate,0,
+ (select nvl(max(seq), 0)+1 from board),0,0);   
+
+insert into board values
+((select nvl(max(seq), 0)+1 from board), 'Spring 설정파일','teriwoo','Spring Container가 ...파일',sysdate,0,
+ (select nvl(max(seq), 0)+1 from board),0,0);  
+
+commit ;
+
+** nvl(a,b) => a 없으면(NULL 이면) b 선택 
+
+select * from board ;
+----------------------------------------------------------------------------------------
+===================================
+-------------------------------------------------------------------------------------------------
+
+=> sysdate 활용
+
+"INSERT INTO CONTENT (ID, CON_NUM, TITLE, TEXTBOX, NAME, REGDATE, READCNT, ATTACH1, ATTACH2, ATTACH3) " +  " VALUES ('"+id+"', "+maxCnum+", '"+cTitle+"', '"+content+"', '"+name+"', to_date(sysdate, 'yyyy/mm/dd/ hh24 : mi : ss.'), 0, '"+attach1+"', '"+attach2+"', '"+attach3+"') "); 
+
+
+select to_date (substr(to_char(sysdate, 'YYYYMMDDHH24MI')1,11)||'0', 'YYYYMMDDHH24MI') from dual;
+
+** to_date :  날자를 문자로 ( 그러나 년.월.일 만 보여줌 )  
+select  to_date(sysdate, 'yyyy/mm/dd/ hh24 : mi : ss') from dual;
+
+** to_char :  날자를 문자로 ( 년.월.일 다 보여줌 )
+select  sysdate , to_char(sysdate, 'yyyy/mm/dd/ hh24 : mi : ss')  from dual;
+
+=> board 적용
+select  seq, wid, title,  to_char(regdate, 'yyyy/mm/dd/ hh24 : mi : ss')  aaa from board ;
+.....  board.setRegdate(RS.getDate("aaa"));
+
+-----------------------------------------------------------------------------------------
+
+**** Board Paging *****************************
+** Paging 과정
+
+=> 1Page 당 10개씩 (변수 c로 가정)  출력, sql 문으로 select 했을때 select 순으로 일련번호가 있다고 가정하면
+	1P : 1~10
+	2P : 11~20
+	3P : 21~30  
+	99 P : 91~100 ,   981~990
+	100 P :   991 ~  1000
+	=> pNo(요청),  c (10개씩으로 결정),  , eNo
+	=> sNo = (pNo-1) * c +1
+	=> eNo =  sNo + c -1
+
+=> 요청 PageNo 가 전달되면 몇번 부터 몇번 까지의 Row (Record, 튜플) 필요한지를 계산
+
+
+1. PageVO.java  작성
+
+	private List<BoardVO> list ;  // 목록리스트 저장
+	private int currPage ;     // 현재 페이지번호
+	private int perPage = 5; // 페이지당 보여줄 갯수
+	private int totalCount;   // 전체 레코드갯수
+	private int sno;             // startRno
+	private int eno;             // endRno
+	private int perPageNo = 3; 
+		// 한 화면에 출력되는 PageNo 갯수
+		// => paging2 에서 사용
+
+2. BoardDAO => Service , ServiceImpl
+	=> totalCount()
+	=> pagingList() 
+		-> 1) ResertSet 에서 추출 -> DAO 
+		-> 2) 검색 조건으로 추출  -> mybatis
+
+** Oracle SQL 부분 검색 연습
+
+=> rownum , order by : primary key의 경우만 적용됨.
+
+=> rownum,  ROW_NUMBER(), OVER(order by root desc)
+-> rownum
+select seq, title, rownum from board ;
+select seq, title, rownum from board  where id='banana';
+select seq, title, rownum from board order by root desc, step asc ;
+
+=> test1
+select b.* , ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b;
+select seq, title , ROW_NUMBER() OVER(order by root desc, step asc) rnum from board ;
+
+=> test2
+select seq, id, rnum  
+  from (select b.* , ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b ) ;
+
+select seq, id, rnum  
+  from (select b.* , ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b ) 
+	where rnum>= sno and  rnum<=eno ;
+
+select seq, id, rnum  
+  from (select b.* , ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b ) 
+	where rnum   between 11 and 15 ;
+
+
+
+3. Controller
+
+4. jsp 수정 => pageList.jsp 
+
+
+
+    DB => Sql => Resultset => Controller => getBoardList.jsp
+
+**** Board Paging2 *****************************
+
+=> 한화면에   
+       First,  PrevPage블럭, 3 page 씩, Nextpage블럭, Last 
+       <<  <  1  2  3  >  >> 
+
+=> 필요사항
+   -> Page당 출력할 Page No 갯수  : perPageNo
+   -> sPage, ePage :  currPage, perPageNo 이용
+	
+----------------------------------------------------
+
+** 준비
+=> Conteroller : 매핑 메서드( plist ) 수정
+   -> currPage, perPageNo 를 이용해서 sPage, ePage 계산
+
+=> View 수정 : pageList.jsp
+   -> First,  Prev : enabled 여부
+   -> sPage~ePage 까지 perPageNo 값 만큼 출력, 
+   -> Next, Last : enabled 여부 	
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+

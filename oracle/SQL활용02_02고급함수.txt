@@ -1,0 +1,1154 @@
+=====================================================
+
+*** @ c:\Mest\sql001.txt  => 자동실행 가능
+*** GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기
+*** edit c:\MTest\boardset.txt   메모장으로 열기
+
+sqlplus system/oracle
+conn  system/oracle
+
+set linesize 100
+set pagesize 100
+COLUMN price Format 999999 ;
+COLUMN id Format a10 ;
+COLUMN code Format a10 ;
+COLUMN name Format a15 ;
+
+COLUMN sno Format 9999 ;
+COLUMN sname Format a10 ;
+
+COLUMN wid Format a10 ;
+COLUMN title Format a15 ;
+COLUMN seq Format 999 ;
+
+COLUMN content Format a40 ;
+COLUMN regdate Format a12 ;
+
+COLUMN root Format 999 ;
+COLUMN step Format 999 ;
+COLUMN indent Format 999 ;
+
+COLUMN name Format a10 ;
+COLUMN id Format a10 ;
+COLUMN birthd Format a10 ;
+COLUMN granted_role Format a20 ;
+
+select * from board ;
+select * from member ;
+=================================================
+=================================================
+***  능력단위 : 22001020413_16v3   SQL활용
+    ** 능력단위요소
+      => 2001020413_16v3.1 기본 SQL 작성하기
+      => 2001020413_16v3.2 고급 SQL 작성하기
+
+=================================================
+2001020413_16v3.2 고급 SQL 작성하기
+=================================================
+
+-- 다양한 함수 및 함수의 응용
+-- nvl, Decode , Case, BETWEEN , IN
+=================================================
+1) NVL
+	nvl 함수 (a,b) => a 없으면(NULL 이면) b 선택
+=> student 에서 sno 의 최소값 또는 최소값이 없다면 1000 을 출력 하도록 select 문 작성
+ 	select nvl(5,1000) from dual ;
+	select nvl(null,1000) from dual ;
+  select nvl(min(point),1000) from member ;\
+  -> auto numbering 에 응용됨
+    ( new seq : 현재 테이블의 seq중 가장 큰 값 + 1  )
+  select nvl(max(seq),1000) from board ;
+  -> 실습
+    1) board 를 이용해서 myboard 만들기
+      (create table myboard as select * from board where 2=1;)
+       또는 mybord 를 구조만 남겨놓기 ( 자료 모두지워짐 : truncate table myboard;)
+    2) myboard 에 nvl 적용해서 값이 없는 경우 확인
+       select nvl(max(seq),1000) MaxTest, nvl(min(seq),0) MinTest from myboard;
+    3) myboard 에 nvl 적용해서 auto numbering 적용하기
+       select max(seq) Maxnum , nvl(max(seq),0)+1  newNum from myboard;
+       select max(seq) Maxnum , nvl(max(seq),0)+1  newNum from board;
+    4) 이것을 적용한 입력문 만들기
+       insert into myboard values(
+         (select nvl(max(seq),0)+1 from myboard),
+         'title 하하하?','apple','nvl test test' ,sysdate,0);
+
+       insert into board values(
+         (select nvl(max(seq),0)+1 from board),
+         'title 하하하','white','nvl test test' ,sysdate,0);
+
+=> member 에서 point 의 값이 1000보다 작은값이 있으면, 그값을 가져와 출력하고,
+	없으면 9999를 출력한다.
+  select m.id, m.name, m.point,
+  nvl((select point from member im where point<1000 and m.id=im.id),9999) nvlTest from member m;
+
+	select nvl((select sno from student where sno < 1000), 1000) test from student;
+	select nvl((select sno from student where sno < 1000), 1000) test from dual;
+	-> sno < 1000 에 해당되는 자료가 없으므로 처리됨
+
+	select nvl((select sno from student where sno < 4444), 1000) test from student;
+	-> ORA-01427: 단일 행 하위 질의에 2개 이상의 행이 리턴되었습니다.
+
+	select nvl((select sno from student where sno < 4444), 1000) test from dual;
+	-> ORA-01427: 단일 행 하위 질의에 2개 이상의 행이 리턴되었습니다.
+
+
+2) Decode
+// 마치 if 문과 같은 역할
+// DECODE (비교대상,비교값, '같을때 반환값', '다를때 반환값')
+
+-> mymember 에서 lev 가 A 면 '관리자', 아니면 '일반'
+select id, name, lev , DECODE(lev,'A','관리자','일반') 등급 from mymember;
+select id, name, lev , DECODE(lev,'A','관리자') 등급 from mymember;
+
+// DECODE (비교대상,비교값1, R1, 비교값2, R2,비교값3, R3)
+=> lev : A 관리자, B 나무, C 잎새, D 새싹
+   DECODE (lev,'A','관리자','B','나무','C', '잎새','새싹')
+select id, name, lev, DECODE (lev,'A','관리자','B','나무','C','잎새','새싹') 등급 from mymember;
+
+-> mymember 에서 birthd 의 월 이 '09' 면 '생일축하' 표시하기
+select id, name, birthd , Decode(SubStr(birthd,6,2),'09','생일축하') from mymember;
+
+=> myfriend 에서 생일이 11월이면 '당첨' 아니면 '탈락' 출력하기
+	select no, name, phone, birthday, decode(substr(birthday,6,2) , '11' ,'당첨' , '탈락' ) from myfriend;
+=> myfriend 에서 phone 의 4번째자리에 - 없으면 오류 있으면 정상 출력 되도록
+	select no, name, phone, birthday, decode(substr(phone,4,1) , '-' ,'정상' , '오류' ) from myfriend;
+
+=> myfriend 에서 grade 가 'D' 이면 'fail' 아니면 'pass' 출력하기
+	select id, grade,  decode(grade,'D','fail','pass') 결과 from myfriend ;
+
+SQL> select  sname, bdate, DECODE (SubStr(bdate, 4 , 2),03, ' 이달의생일 ', ' ')
+       from studt ;
+
+=> member 에 적용
+select id, name, birthd, DECODE (SubStr(birthd, 6 , 2),07, ' 이달의생일 ', ' ')  생일
+       from member ;
+
+// DECODE (비교대상,비교값1, R1, 비교값2, R2,비교값3, R3)
+// DECODE (major,'a','해킹과','b','게임과','c', '보안과')
+// DECODE 를 써서 이름, 학과 학과명을 학과순으로 출력해본다.
+
+SQL> select  sname, major , DECODE (major,'a','해킹과','b','게임과','c', '보안과')
+       from studt order by major;
+
+=> myfriend 에서 id, grade, 등급 출력하기
+	select id, grade , decode(grade,'A','관리자','B','골드','C','실버','일반') 등급 from myfriend ;
+
+select id, name, lev, DECODE (lev,'A','관리','B','나무','C', '잎새', '새싹') 등급
+       from member ;
+
+
+=> DECODE 사용않고 이름, 반명, 회사명 나오도록
+=>  select  sname, major , mname,  company, cname  from studt, mcodet, ccodet
+	where major = mcode and company=ccode order by major;
+
+///  Case  : Decode 기능 확장 => ppt 75p
+
+=>  등급 별로 보너스를 차등 지급하여 보너스액 산출
+    select id, name, lev, point,
+		CASE WHEN lev='A' THEN point*2
+		     WHEN lev='B' THEN point*1.5
+		     -- WHEN lev='C' or lev='D' THEN point*0.5
+         WHEN lev in('C','D','E','F') THEN point*0.5
+		     ELSE 0
+		END bonus
+		from mymember;
+
+=> id, name, weight, weight 를 이용해서 size 표시하기
+   50 이하 : Small , 51~60 : Medium , 61~70 : Large,  70보다크면 : XLarge
+   select id, name, weight,
+   CASE WHEN weight <= 50 THEN 'Small'
+        WHEN weight between 51 and 60 THEN 'Medium'
+        WHEN weight between 61 and 70 THEN 'Large'
+        ELSE 'XLarge'
+   END Spec
+   from mymember;
+
+
+=> 추가  :  pay , bonus 에 '만원' 단위 표시하기
+	select  sname, major , pay || '만원' ,
+		CASE WHEN major = 'a' THEN pay*0.5
+		     WHEN major = 'b' THEN pay*1
+		     WHEN major = 'c' THEN pay*2
+		     ELSE 0
+		END || '만원' bonus
+		from student ;
+
+=> 반 이름 출력하기 a: JAVA, b:GAME, c:보안
+	select  sname, major ,
+		CASE WHEN major = 'a' THEN 'JAVA'
+		     WHEN major = 'b' THEN 'GAME'
+		     WHEN major = 'c' THEN '보안'
+		     ELSE '전공미정'
+		END course
+		from student ;
+
+=> 반 특성 출력하기 a,b: '우수반' 이 외에는 모두 '특수반'
+	select sname, major ,
+		CASE WHEN major='a' OR major='b' THEN '우수반'
+		        ELSE '특수반'
+		END course from student ;
+
+	select sname, major ,
+		CASE WHEN major IN('a','b') THEN '우수반'
+		        ELSE '특수반'
+		END course from student ;
+
+=> myfriend 의 grade를 이용하여 위 와 같은 조건으로 보너스 출력 하기
+	select  id, grade , point ,
+		CASE WHEN grade = 'A' THEN point*3
+		        WHEN grade = 'B' THEN point*2
+		        WHEN grade = 'C' THEN point*1
+		        ELSE 0
+		END 보너스
+		from myfriend ;
+
+=> 응용 : myfriend 의 point 값을 위의 규칙대로 수정하기
+	update myfriend set point = CASE WHEN grade = 'A' THEN point+point*3
+		             		WHEN grade = 'B' THEN point+point*2
+		             		WHEN grade = 'C' THEN point+point*1
+		             		ELSE point+0
+		     			END  ;
+
+=> 위 에다 반 이름 나오도록 수정하기
+ 	select  name, major , mname,  pay ,
+		CASE WHEN major = 'a' THEN pay*0.5
+		        WHEN major = 'b' THEN pay*1
+		        WHEN major = 'c' THEN pay*2
+		        ELSE 0
+		END bonus
+		from studt , mcodet where major=mcode ;
+
+=>  학생들을 키에 따라 Size 구분 S, M, L, 'XL'  로  나누어 출력
+	height<   170  :  S
+		171 <= height and   height < 176  :  M
+		176 <= height <   180  :  L
+		180 <= height <   189  :  XL
+			ELSE :  XXL
+=> member dml weight 값에 따라서  S (59 이하) , M(60~69), L(70~79), 'XL(80 이상)'  로  나누어 출력
+	select id, weight, case when weight < 60 then 'S'
+				when weight between 60 and 69.99 then 'M'
+				when weight between 70 and 79.99 then 'L'
+				else 'XL'
+				end  사이즈 from member ;
+
+	select  name, major , height ,
+		CASE WHEN height < 170 THEN 'S'
+		        WHEN height BETWEEN 170 AND 175 THEN 'M'
+		        WHEN height BETWEEN 176 AND 179 THEN 'L'
+ 		        WHEN height BETWEEN 180 AND 189 THEN 'XL'
+		        ELSE 'XXL'
+		END hsize
+		from studt ;
+
+
+=> member 에서 회원들을 몸무게에 따라 Size 구분 S, M, L, 'XL'  로  나누어 출력
+
+select  id, name, weight || 'Kg' ,
+		CASE WHEN weight < 45 THEN 'S'
+		        WHEN weight BETWEEN 45 AND 50 THEN 'M'
+		        WHEN weight BETWEEN 51 AND 60 THEN 'L'
+ 		        WHEN weight BETWEEN 61 AND 70 THEN 'XL'
+		        ELSE 'XXL'
+		END wSize
+		from member ;
+
+( ** size 는 Oracle 예약어 ,
+ **  rank 는 MySQL 예약어 )
+
+-- BETWEEN , IN -----------------------------------------------------------
+
+SQL> select  *  from  guest  where  pay  BETWEEN   100 AND 200  ;
+// 사번이 5000 번대 인사람 출력 BETWEEN 사용해서 ~
+SQL> select  *  from  guest  where  sabun  BETWEEN   5000 AND 5999  ;
+// 사번이 1000 번대 부터  2000 번대 아닌 사람 출력  BETWEEN 사용해서 ~
+SQL> select  *  from  guest  where  sabun  not  BETWEEN   1000 AND 2999  ;
+SQL>select  *  from  guest  where  title  IN ( ‘Coffee’, ‘Bank’,'card')  ;
+SQL>select  *  from  guest  where  title = ‘Coffee’ or  title = ‘Bank’ or  title ='card'  ;
+SQL>select  *  from  guest  where  title = ‘Coffee’ or ‘Bank’ or 'card'  ; => Error
+
+=======================================================================
+*** 정규식 => ppt 79 page
+1)  REGEXP_LIKE 함수
+-> select id, name from mymember where REGEXP_LIKE(id,'[a-z]');
+-> select id, name from mymember where REGEXP_LIKE(id,'[A-Z]');
+-> select id, name from mymember where REGEXP_LIKE(id,'[A-z]');
+
+2) REGEXP_REPLACE 함수 => 104 page
+
+=======================================================================
+
+----- Group by , Having --------------------------------------------------
+
+**  Group by
+
+=> Group 함수
+select count(*), sum(point), avg(point), max(point), min(point) from mymember;
+
+
+	select major, sno, count(*), sum(pay), avg(pay), max(pay), min(pay) from student ;
+	-> ORA-00937: 단일 그룹의 그룹 함수가 아닙니다
+	select count(*), sum(pay), avg(pay), max(pay), min(pay) from student ;
+
+=> Group 함수와 많이 사용됨
+	-> 반 별로 pay 의 인원수, 합계, 평균, 최대값, 최소값  출력하기
+	select major, count(*), sum(pay), avg(pay), max(pay), min(pay) from student group by major
+	-> 위를 합계가 큰 순서로 출력
+	select major, count(*), sum(pay), avg(pay), max(pay), min(pay)
+	from student group by major order by count(*) desc;
+
+=> DISTINCT (중복된 데이터 제외) 와 비교
+	-> 아래 3구문을 비교해 보세요 ~~
+	select major, sname from student order by major ;
+	select DISTINCT major, sname from student order by major ;
+	-> major, sname 에 DISTINCT 적용
+	select DISTINCT major from student  order by major ;
+
+=> Group 별로 row가 만들어짐
+=> Group by 에 명시된 컬럼과 그룹함수 만 select 문에 사용가능
+-> member lev 별로 id, lev 출력하기
+	select id, lev from member group by lev ; (X)
+	select lev, id from member group by lev ; (X)
+	select lev from member group by lev ; (O)
+	select lev, count(*), sum(point), avg(weight) from member group by lev ;
+
+-> order by 와 비교
+	select lev, id from member order by lev ;
+
+-> board  writer 별로 writer, seq 출력하기
+	select writer, seq, title from board order by writer ;
+-> board  writer 별로 등록 글의 갯수 출력
+	- count(*) : 모든 row 의 갯수
+	- count(title) : title 필드에 값이있는(not null) row 만 count
+	select writer, count(*) 글갯수 from board group by writer ;
+	select writer, count(title) 글갯수 from myboard group by writer ;
+
+-> select id,   count(*) 글등록수 from board group by id order by id;
+-> id 가 c보다 작은 경우만 출력하기
+   select id, count(*) 글등록수 from board where id < 'c' group by id order by id;
+-> count(*) 결과가 1 인경우만 출력하기
+   select id, count(*) 글등록수 from board group by id having count(*)=1 order by id;
+   select id, count(*) 글등록수 from board where count(*)=1 group by id order by id;
+   -- Error -> 그룹 함수는 허가되지 않습니다 반드시 having 으로
+-> where 와 group 동시 사용가능
+   select id, count(*) 글등록수 from board where id < 'c' group by id having count(*)=1 order by id;
+
+=> count , sum, avg, max, min ... 그룹함수
+
+=> count(*) : 모든 row count,
+   count(point) : point 필드에 값이 있는 row 만 count
+
+=> 그룹함수 사용시에 단순컬럼은 매칭이 불가능하기 때문 select 문에 사용할 수 없지만
+	Group by 에 명시된 컬럼은 select 문에 사용가능
+
+=> order by
+select lev, count(*), sum(point),avg(point),min(point),max(point)
+  from mymember group by lev  order by lev ;
+-> 인원이 많은 순으로 출력
+select lev, count(*) count, sum(point),avg(point),min(point),max(point)
+  from mymember group by lev  order by count desc ;
+
+-> group 과 조건
+   인원이 2명 이상인 그룹만 출력하기
+   select lev, count(*) count, sum(point) from mymember
+    group by lev where count >= 2 order by count desc ;
+    ====> 그룸항목으로 조건을 줄때는 having 사용 해야만 함
+
+
+=> member
+select lev, count(*), sum(point), avg(point) from member ; (X)
+select count(*), sum(point), avg(point) from member ; (O)
+
+select lev, id, count(*), sum(point), avg(point) from member group by lev   order by lev; (X)
+select lev, count(*), sum(point), avg(point) from member group by lev order by lev; (O)
+
+select company, count(*), sum(*), avg(*) from studt  group by company  ;
+=> 반별로 학생수, 키의 평균과 합 ,  몸무게의 평균과 합  출력
+select major, count(*), sum(height), avg(height), sum(weight), avg(weight) from studt  group by major  ;
+
+----------------------------------------------------------------------
+
+=> 실습
+
+  새싹 등급의 pay 의 합, 평균, 최대값, 최소값, 인원수 를 출력하기
+
+select lev count(*), sum(pay), avg(pay),min(pay), max(pay) from member  group by lev  ;
+
+select count(*), sum(pay), avg(pay),min(pay), max(pay) from member where lev='A'  group by lev  ;
+
+select count(*), sum(pay), avg(pay),min(pay), max(pay) from member group by lev having count(*) >=3  ;
+
+-----------------------------------------------------
+
+** 2개 이상의 필드에 적용.
+
+=> select lev,id, count(*) from member group by lev, id  order by lev ;
+=> select lev,id, count(*) from member ; (X)
+
+====================================================
+-----------------------------------------------------
+**  Having
+-----------------------------------------------------
+
+=> Group by에 의해 생성된 그룹을 대상으로 조건 지정
+    ( 반면에 where 는 from 절에 지정된 테이블을 대상으로 조건지정 )
+=> group 에 사용된 필드와 함수( count... ) 만을 조건의 대상으로 함.
+
+-> 적용
+select lev , count(*) count,sum(point) from mymember
+      group by lev having count(*)>=2 order by count desc ;
+
+** group 에 조건이 포함되는 경우
+-> point 가 100 이상인  member 를 대상으로 ...
+-> weight 가 50 이상인  member 를 대상으로 ...
+select lev , count(*) count,sum(point) from mymember
+      where weight > 50
+      group by lev having count(*)>=2 order by count desc ;
+-- 비교
+select lev , count(*) count,sum(point) from mymember
+      group by lev having count(*)>=2 order by count desc ;
+***********
+name,  학년,  반 , 국어, 영어,
+aaaa1    1    1    90    90
+aaaa2    1    2    90    90
+aaaa3    1    2    90    90
+aaaa4    2    1    90    90
+aaaa5    2    2    90    90
+aaaa6    2    2    90    90
+=> 학년별 그룹 -> count(*)
+    1 3명
+    2 3명
+=> 학년, 반 별 그룹 -> count(*)
+    1    1    1명
+    1    2    2명
+    2    1    1명
+    2    2    2명
+***********
+-> board 회원 별로 글등록수를 출력한다.
+select id, count(*) 글등록수 from board group by id;
+
+
+=> student 에서 pay 가 500 이상인 인원에 대해서 pay 의 인원, 합계. 평균 출력
+	select count(*), sum(pay), avg(pay) from student  where pay >=500 ;
+=> student 에서 pay 가 500 이상인 인원에 대해서 반별로 pay 의 인원, 합계. 평균 출력
+	select major, count(*), sum(pay), avg(pay) from student  where pay >=500 group by major ;
+
+=> 위에다가 반의 pay 합계가 1000 이상인 반만 출력하기
+	select major, count(*), sum(pay), avg(pay) from student
+	where (pay >=500)   and   ( sum(pay) >=1000 )   group by major ;
+	-> ORA-00934: 그룹 함수는 허가되지 않습니다
+	-> where 조건에 그룹 함수는 사용할 수 없음
+
+=> 그러므로 그룹 함수를 조건으로 하려면 having 을 사용
+	select major, count(*), sum(pay), avg(pay) from student
+	where pay >=500 group by major having sum(pay) >=1000 ;
+
+=> myfriend 에서 code 별로 no 가 5 이하 중에  인원이 2명이상인 code 출력하기
+	select code, count(*)  from myfriend
+	where no <= 5 group by code having count(*) >=2 ;
+=> having 위치 -> OK
+	select code, count(*)  from myfriend
+	where no <= 5  having count(*) >=2 group by code ;
+
+---- 실습 -----------------
+
+=> lev 별로 인원이 5명 이상인 그룹만 나와라
+select lev, count(*), sum(point), avg(point) from member
+	where count(*) >= 5 group by lev  order by lev;  // (X)
+	-> count(*) 등 group 함수는 where 조건 불가능
+
+select lev, count(*), sum(point), avg(point) from member
+	where lev !='A' group by lev  order by lev;   // (O)
+
+select lev, count(*), sum(point), avg(point) from member
+	Having count(*) >= 5 group by lev  order by lev;  // (O)
+
+select lev, count(*), sum(point), avg(point) from member
+	Having lev !='A' group by lev  order by lev;
+-------------------------------------------------------------
+
+-> select 문에 없는 필드 사용
+select lev, count(*), sum(point), avg(point) from member
+	Having id > 'b' group by lev  order by lev;   // (X)
+
+select lev, count(*), sum(point), avg(point) from member
+	where id > 'b' group by lev  order by lev;    // (O)
+
+--------------------------------------------------------------
+
+*** weight 가 50 이상인 member 를 대상으로 lev 별로 인원이 2명 이상인 그룹만 나와라
+
+=> select count(*) from member ;
+=> select count(*) from member where weight < 50 ;
+=> select lev, count(*), sum(point), avg(point) from member where weight >= 50
+	Having count(*) >= 2 group by lev  order by lev;
+
+=> 회사별로 인원이 2명 이상인 그룹만 나와라
+select company, count(*) from studt Having count(*) >= 2  group by company ;
+select lev, count(*) from mymember Having count(*) >2 group by lev ;
+select lev, count(*) from mymember Having lev >= 'B' group by lev ;
+
+=> Having 조건의 위치 둘 모두 가능
+select company, count(*) from studt   group by company Having count(*) >= 2;
+
+=> 주의사항
+
+SQL> select company, count(*) from studt where count(*) >= 2 group by company  ; (X)
+
+=> select company, cname  from studt, ccodet  where ccode= company   ;
+
+===================================================================
+*** Group by 관련 명령
+
+1)  group by 만 적용한 경우
+
+SQL> select lev, name , sum(point) from member group by lev, name;
+
+LE NAME                           SUM(POINT)
+-- ------------------------------ ----------
+A  김유신                               2000
+B  바나나                              12345
+D  나나나                              12000
+C  스티브                              12345
+D  이순신                              12345
+B  카푸치노                            12345
+A  홍길동                              12345
+
+7 개의 행이 선택되었습니다.
+
+2) ROLLUP
+=> lev 별로 소계와  전체합계  출력됨.
+ 
+SQL> select lev, name , sum(point) from member group by ROLLUP(lev, name);
+
+LE NAME                           SUM(POINT)
+-- ------------------------------ ----------
+A  김유신                               2000
+A  홍길동                              12345
+A                                      14345
+B  바나나                              12345
+B  카푸치노                            12345
+B                                      24690
+C  스티브                              12345
+C                                      12345
+D  나나나                              12000
+D  이순신                              12345
+D                                      24345
+
+LE NAME                           SUM(POINT)
+-- ------------------------------ ----------
+                                       75725
+
+12 개의 행이 선택되었습니다.
+
+3) CUBE
+=> 전체합계,  name 별 합계, lev 별 합계, lev와 name 별 합계 출력됨 
+
+ SQL> select lev, name , sum(point) from member group by CUBE(lev, name);
+
+LE NAME                           SUM(POINT)
+-- ------------------------------ ----------
+                                       75725
+   김유신                               2000
+   나나나                              12000
+   바나나                              12345
+   스티브                              12345
+   이순신                              12345
+   홍길동                              12345
+   카푸치노                            12345
+A                                      14345
+A  김유신                               2000
+A  홍길동                              12345
+
+LE NAME                           SUM(POINT)
+-- ------------------------------ ----------
+B                                      24690
+B  바나나                              12345
+B  카푸치노                            12345
+C                                      12345
+C  스티브                              12345
+D                                      24345
+D  나나나                              12000
+D  이순신                              12345
+
+19 개의 행이 선택되었습니다.
+
+4) Grouping Sets 
+=> lev별 합계  ,  name별 합계  출력됨.
+
+SQL> select lev, name , sum(point) from member group by Grouping Sets(lev, name);
+
+LE NAME                           SUM(POINT)
+-- ------------------------------ ----------
+   카푸치노                            12345
+   김유신                               2000
+   스티브                              12345
+   나나나                              12000
+   홍길동                              12345
+   이순신                              12345
+   바나나                              12345
+D                                      24345
+A                                      14345
+B                                      24690
+C                                      12345
+
+11 개의 행이 선택되었습니다.
+
+===================================================================
+
+----- JOIN -------------------------
+=> 복습
+	-> student , mcodet 을 이용해서 sno, sname, major, 반이름 출력하기
+	select sno, sname, s.major, mname 반이름 from student s, mcodet m
+	where s.major=m.major ;
+
+
+=> 원하는 결과를 얻기위해 여러개의 테이블을 결합하여 출력하는경우
+
+--------------------------
+*** join 표준형식1 : Oracle
+
+select 필드명 from 테이블명1, 테이블명2 where 테이블1.조인애트리뷰트=테이블1.조인애트리뷰트 ;
+select seq, wid, name, title from board b, member m where b.wid=m.id ;
+=> 종류 : cross_Join, equi_Join , outer_Join, self_Join
+
+-> 기본연습1 ( f.key 설정된 경우)
+board 에서 seq, id, name, title .. => 글쓴이의 이름 추가하기
+select seq, id, name, title from board, member ;
+  -> ORA-00918: 열의 정의가 애매합니다 (board, member 모두 id 필드를 소유)
+     해결 : id 에 "테이블명과 ." 을 붙여줌
+select seq, b.id, name, title from board b, member;
+  -> board * member : non equi_Join, cross_Join
+
+select seq, b.id, name, title from board b, member m
+        where b.id = m.id  order by seq desc;   ( equi_Join, 동등비교)
+
+-> 기본연습2 ( f.key 설정되지 않은 경우 , mymember, myboard)
+select seq, b.id, name, title from myboard b, mymember m where m.id=b.id ;
+-- 일치하는 id 가 없으면 출력 안됨.
+
+--------------------------
+*** join 표준형식2 : 국제표준 (Ansi Join)
+
+select 필드명 from 테이블명1 join 테이블명2 on 테이블1.조인애트리뷰트=테이블1.조인애트리뷰트 ;
+select seq, wid, name, title from board b join member m on b.wid=m.id ;
+=> 종류 : join ~ on, narural Join (비권장) , join using, equi join
+
+===================================================================
+--------------------------
+** non equi_Join , cross_Join
+=> board , member 에서 seq, wid, 작성자의 이름을 출력하기
+	-> cross_Join : 데이터의 row 의 갯수를 빠르게 늘릴때
+	select sno, sname, s.major, mname 반이름 from student s, mcodet m ;
+	select seq, writer, name from board, member ;
+
+--------------------------
+** equi_Join : 다른 테이블과 동등비교로 join
+( equivalent : 동등 )
+
+	-> equi_Join (동등 조인, inner_Join)
+	select sno, sname, s.major, mname 반이름 from student s, mcodet m
+		where s.major=m.major;
+select 
+	-> outer_Join : 연결되는 값이 없는쪽에 (+)
+    - 종류 : LEFT , RIGHT, FULL OUTER JOIN
+
+  member 에 id 가 없는경우도 board 의 글은 출력 되도록 하는경우
+  select seq, b.id, name, title from myboard b, mymember m where m.id(+)=b.id ;
+
+	test1)  student 에 k 반 학생 추가
+	-> insert into student values (1234,'김은실','k',77000);
+	    select sno, sname, s.major, mname 반이름 from student s, mcodet m
+		where s.major=m.major(+);
+	test2)  mcodet 에 j , 'JAVA Game' 반 추가
+	-> insert into mcodet values ('j','JAVA Game');
+	select sno, sname, s.major, mname 반이름 from student s, mcodet m
+		where s.major(+)=m.major;
+
+	select sno, sname, s.major, mname 반이름 from student s, mcodet m
+		where s.major(+)=m.major(+);
+	-> ORA-01468: outer-join된 테이블은 1개만 지정할 수 있습니다
+
+=> board , member 에서 작성자 별로 title 출력하기
+select  seq, wid, name, title, content from myuser, memo
+where id = wid order by wid ;
+
+-----------------------------------------------------------
+--------------------------
+** natural join
+=> 두테이블의 참조하려는 열의 이름과 타입이 같을때
+=> student 의 major 와 mocet 의 major 의 경우
+
+	-> 동등join 과 비교
+	select sno, sname, s.major, mname 반이름 from student s, mcodet m
+		where s.major=m.major;
+	-> natural join
+	select sno, sname, major, mname 반이름 from student natural join mcodet ;
+  select seq, id, name, title from board natural join member;
+
+--------------------------
+** join  ~  using
+=> 두테이블의 열의 이름이 같을때, 타입은 다를때
+=> select sno, sname, major, mname 반이름 from student join mcodet using (major);
+
+=> test)  Type 이 다른경우1  ( major : varchar2(1), char(1) -> 크기가 같은 경우)
+
+	mcodet 을 이용해서 dcodet 을 만들고 major 의 type 을 varchar2(1) 로 수정후 Test
+	create table dcodet as select * from mcodet;
+	alter table dcodet modify major  varchar2(1) ;
+	select sno, sname, major, mname from student  join dcodet using (major);
+	select sno, sname, major, mname 반이름 from student natural join dcodet ;
+
+=> test) dcodet 의 mojor 의 컬럼명을 major2 로 변경하고 Test
+	( 컬럼명이 서로 다른경우 Test)
+	alter table dcodet rename column major to major2 ;
+	test1) natural join -> cross Join
+	select sno, sname, major, mname 반이름 from student natural join dcodet ;
+
+	test2) join ~ using
+	select sno, sname, major, mname from student  join dcodet using (major2);
+	-> ORA-00904: "STUDENT"."MAJOR2": 부적합한 식별자
+
+=> test)  Type 이 다른경우2
+	( major : student char(3), dcodet varchar2(3) -> 크기가 같지만 값의 길이는다른 경우 )
+	-> 동등 join
+	select sno, sname, s.major, mname from student s ,dcodet d
+		where s.major=d.major2 ;
+	-> 선택된 레코드가 없습니다.
+	( char Type 에 빈공간이 있기 때문에 서로 다른값으로 취급 )
+	-> select major2, mname from dcodet where major2='a' ;   (O)
+	-> select major, sname from student where major='a' ;   (O)
+
+=> test) dcodet 의 mojor2 의 컬럼명을 major 로 변경하고
+	컬럼명은 동일 하지만 Type이 다른경우
+	major : student char(3), dcodet varchar2(3) -> 크기가 같지만 값의 길이는다른 경우 Test
+
+	-> alter table dcodet rename column major2 to major ;
+	-> select sno, sname, major, mname from student natural join dcodet ;
+	-> select sno, sname, major, mname from student  join dcodet using (major);
+	-> 선택된 레코드가 없습니다.
+
+select seq, id, name from myboard natural join member ;
+select seq, writer, name from board natural join mymember using (writer) ;
+
+===================================================================
+// 복습 예제
+
+** board 의 원글만 출력 하면서, 글쓴이의 이름, id, seq 를  출력 하세요...
+
+select m.name, b.id, seq from board b, member m where step=0  and b.id=m.id ;
+
+
+
+1. 학생 테이블에서 pay 100 이상 인사람들의 학과, 학과명, 과 회사, 회사명 과 이름
+   을 학과명, 회사명  순으로 출력 하세요
+
+SQL>select  name, major, mname, company, cname
+       from studt, mcodet , ccodet
+      where pay >= 100 and major =mcode and company = ccode
+      order by mname, cname ;
+
+2.  번호 3000 인 학생의 회사명 출력
+SQL> select company from studt where sno = 3000 ;
+  알아낸 값  '?'  으로
+SQL> select      cname          from  ccodet  where ccode = company ; // 오류
+SQL> select      cname          from  ccodet  where ccode = '?' ;
+
+//  => studt 에서  번호 3000 인 학생의 회사 코드 검색
+//  => ccodt 에서  위 회사 코드의  회사명 검색
+//  => 두단계 작업을 한번에 하는것이 Join
+
+SQL>select  sno, name, company, cname from studt, ccodet
+where company = ccode ;
+
+/// 주의사항
+// => 필드명이 같은경우  studt.name , ccodet.name
+// => 테이블명에 별명 사용  from studt ss, ccodet cc => ss.name , cc.name
+
+SQL>select  major, mname, company, cname, name from studt, ccodet, mcodet
+where major= mcode and company = ccode order by major , company;
+
+SQL>select  name, mname, cname  from studt , ccodet, mcodet
+where major= mcode and company = ccode ;
+
+SQL>select  sname, mname 반, cname 회사  from studt ss , ccodet cc, mcodet mm
+where ss.major= mm.mcode and ss.company = cc.ccode ;
+
+
+===================================================================
+--------------------------
+** self_Join : 하나의 테이블 내에서 Join
+
+=> member 테이블 에 추천인 id 컬럼(rid)  이 있는 경우
+=> member 에서 id, name, 추천인id, 추천인 name 을 출력하는 경우
+  select m1.id, m1.name, m1.rid, m2.name rname from member m1, member m2 where m1.rid=m2.id;
+	select s1.sno, s1.sname, s1.rno, s2.sname from student s1, student s2 where s1.rno = s2.sno ;
+=> 실습
+	-> member 에 rid varchar2(10) 추가 하고 위의 구문 Test
+	alter table member add  rid varchar2(10) default 'orange' ;
+  alter table member drop column test ;
+
+=> employee 목록 출력 하면서 팀장 이름 출력하기
+사번   이름      부서    직책    상관  전화번호   주소
+0001   홍길동1    01    사원    0003
+0002   홍길동2    01    사원    0003
+0003   홍길동3    01    팀장    0004
+0004   홍길동4    02    사장
+0005   홍길동5    02    사원    0003
+
+=> 사원의 경력
+사번   경력     상세내용
+0001   경력1      01
+0001   경력2      01
+0002   경력1      01
+0002   경력2      02
+0002   경력3      02
+
+=> position table
+직책    급여  년간휴가일수
+사원    5000  30
+팀장    9000  20
+사장    1000  10
+
+----- 연습 ---------------------------
+1) 테이블 2개를 정의하고, inner_Join , outer_Join 경우의 예시를 작성해보세요 ~~
+-> 테이블 2개를 정의, insert 5개 , 출력
+-> inner_Join
+-> outer_Join
+
+
+--------------------------------------
+select id, name, recomid from mymember ;
+
+=> 회원들 의 소개자 의 이름을 출력하기 ( mymember 사용 _recomid )
+
+=> select m1.id, m1.name, m1.recomid 추천인ID, m2.name 추천인이름
+	from mymember m1, mymember m2 where m1.recomid = m2.id ;
+
+=> select m1.id, m1.name, m1.recomid 소개자id, m2.name 소개자이름
+    from member2 m1 , member2 m2 where m1.recomid = m2.id ;
+
+** 실습
+-> myfriend 의 address 필드 삭제, recomid varchar2(10) default 'apple' 필드 추가
+
+-> alter table myfriend drop column address ;
+-> alter table myfriend add recomid varchar2(10) default 'apple' ;
+-> select id, name, recomid from myfriend ;
+
+   ------ m1 을 board 로 m2를 member 로 ....
+   ------ banana 바나나     apple       m2의 id 가 apple 인 row의 name값
+-> select m1.id, m1.name, m1.recomid, m2.name name from myfriend m1, myfriend m2
+	where m1.recomid=m2.id ;
+
+
+-------------------------------------------------------------------
+--------------------------
+** outer_Join
+
+=> board , member 이용하여 글게시자의 이름 출력하기
+=> member 에 id 없어도 출력되도록 하는것이 outer_Join
+=> 연결되는 값이 없는 쪽에 (+) 붙여줌.
+
+-> 확인 :
+	select seq, writer  from board ;
+	select id, name  from member ;
+select seq, writer, name from board, member where board.writer = member.id ;
+select seq, writer, name from board, member where board.writer = member.id(+) ;
+select seq, writer, name from board, member where board.writer(+) = member.id ;
+
+======================================================================
+
+///  Group & Join 의 경우 ( group & where )
+
+=> board 에서 id 별로 글등록 갯수 를 출력 하면서, id 이 이름도 출력하기
+1) select id, count(*) 글등록수 from board group by id order by id ;
+2) select b.id, count(*) 글등록수, m.name from board b, member m
+        where b.id=m.id group by b.id, m.name order by b.id;
+
+=> member 에서 id 별 글등록수 출력하기
+1) id 가 banana 인 사람의 글등록수
+    select count(*) from board where id='banana' ;
+2) select m.id, m.name, (select count(*) from board b where b.id=m.id) 글등록수 from member m;
+
+=> student 에서 반 , 반이름, count(*) , sum(pay),  avg(pay) 를 출력하세요.
+	select s.major, m.mname, count(*) , sum(pay),  avg(pay)
+	from student s, mcodet m where s.major=m.major
+	group by s.major, mname;
+
+	-> 추가 :  위에서 인원수 3인 이하인 반만 출력
+
+	select s.major, m.mname, count(*) , sum(pay),  avg(pay)
+	from student s, mcodet m where s.major=m.major
+	group by s.major, mname   having  count(*) < 3  ;
+
+
+
+
+=> 국어 점수가 50점 이상인 학생들을 대상으로  반별로 학생수 와 각 과목의 합계와 평균
+
+select mname 학과, count(*) 학생수, sum(pay) from studt, mcodet where major=mcode
+and pay>= 50 group by mname ;
+
+** board 와 member 확인후 실습
+
+=> 글쓴이 별로  writer, 등록글의 수, cnt(조회수) 합계  (  board, member )
+	select writer,count(*),sum(cnt) from board group by writer ;
+-> 이름 출력
+	select writer,name,count(*),sum(cnt) from board b,member m
+			where b.writer=m.id group by writer,name ;
+-> 단 cnt(조회수) 합계 가 3 이상
+	select writer,name,count(*),sum(cnt) from board b,member m
+	where b.writer=m.id group by writer,name having  sum(cnt)>3  ;
+
+-> having 조건 복습
+	select writer, count(*) , sum(cnt) from board group by writer having writer >='c' ;
+
+-> writer 를 이용한 경우
+	select writer , count(*) 등록글수, sum(cnt) from board  group by writer;
+-> name 을 이용 ( join, where , group )
+	select name  , count(*) 등록글수, sum(cnt) from board, mymember
+		where writer = id and seq >3 group by name ;
+
+select name, count(*) 등록글수, sum(cnt) from board, mymember where writer=id
+and seq >= 3 group by name ;
+select seq, writer from board ;
+
+=======================================================================
+*** Join 과 유사한 기능을 수행하는 명령  EXISTS, NOT EXISTS  
+
+*** EXISTS
+
+=>  EXISTS(서브 쿼리)는 서브 쿼리의 결과가 "한 건이라도 존재하면" TRUE 없으면 FALSE를 리턴
+=>  EXISTS는 서브 쿼리에 일치하는 결과가 한 건이라도 있으면 TRUE 를 리턴하고
+     쿼리를 더 이상 수행하지 않는다.
+=>  그러므로 서브쿼리에 데이터량이 많은경우 사용하면 성능에 도음됨.
+
+=> sql 구문 비교
+
+* select m.name, 1  from member m;  ->  value 1 을 해당 위치에 출력
+
+* select b.seq, b.id, m.name from board b 
+	where EXISTS (select m.name, 1  from member m where b.id=m.id) ;  
+// 오류 :  ORA-00904: "M"."NAME": 부적합한 식별자
+ 
+* select b.seq, b.id  from board b 
+	where EXISTS (select  1 from member m where b.id=m.id) ; 
+	-> 서브퀴리의 SELECT 절에 컬럼은 불필요하기 때문에 형식적으로 의미없는 1을 기입.
+
+       SEQ ID
+---------- --------------------
+         2 hongsam
+         3 banana
+         4 apple
+         5 coffee
+
+	-> member 에 일치하는 id 가 존재하는 경우에만 출력 
+
+=> In 과 비교
+*  select b.seq, b.id  from board b 
+	where b.id IN (select m.id from member m where m.id=b.id) ; 	  
+ 	-> 위와 동일 : member 에 일치하는 id 가 존재하는 경우에만 출력 
+
+=> Join 과비교
+*   select b.seq, b.id  from board b, member m where  m.id=b.id ;
+	-> 위와 동일 : member 에 일치하는 id 가 존재하는 경우에만 출력 
+
+=> Case 에 적용 예
+
+*  select m.id, m.name , m.lev, CASE When Exists (Select 1 from board b where b.id=m.id)
+			Then 'Yes'
+		       END writeBoard
+   		from member m where m.lev>'A' ; 
+    -> lev B~D 중에 board 에 글쓴적 있는 member 는 'Yes' 출력  	  
+
+ID             NAME                    LE  WRI
+------- --- ---------------------- 
+green        김유신                    A
+hongsam  홍길동                    A   Yes
+banana     바나나                    B   Yes
+coffee       카푸치노                 B   Yes
+apple        스티브                     C   Yes
+
+
+=======================================================================
+
+*** CRUD : 기본 DDL, DML 구문
+Create_create, insert / Read_select / Update_update / Delete-delete
+
+=======================================================================
+
+** DML  ( 04/07 복습 )
+=> 단일행(row, record) 적용
+  -연산자, 관계식, 문자함수, 숫자함수, 날짜함수, between, in
+  - nvl, decode, CASE
+=> 여러행(복합 row, record) 적용
+  - 함수 : count, sum, avg, max, Min
+  - group by, having
+=> 여러 table : join
+=> 여러 sql : 서브쿼리
+
+-> id 가 banana 인 member 가 쓴 글목록 출력
+select * from board where id='banana';
+-> seq+cnt+100 => total 로 출력한다
+select seq, id, cnt, (seq+cnt+100) TOTal from board;
+-> title 또는 content 에 Oracle 이 포함된 글목록 출력
+select seq, title, content from board where
+          title like '%Oracl%' or content like '%Oracl%';
+-> id 별 글 등록수, cnt 합계, max, min
+select id, count(*), sum(cnt), max(cnt), min(cnt) from board
+        group by id;
+=> seq가 가장 큰 글의 id 가 등록한 글목록 출력하기
+select id from board where seq=(select max(seq) from board ) ;
+select * from board where id=(select id from board where seq=(select max(seq) from board ));
+-> seq가 가장 작은 글의 id 가 등록한 글목록 출력하기
+select * from board where id=(select id from board where seq=(select min(seq) from board ));
+-> member 에서 weight 가 50 이하인 회원과 동일한 등급의 회원 목록 출력하기
+1) select lev from member where weight<50 ;
+2) select id, lev, weight from member where
+      lev =(select lev from member where weight<50) ;
+      -- 단일 행 하위 질의에 2개 이상의 행이 리턴되었습니다.
+      -- select id, lev, weight from member where
+      --       lev in ('D','C') ;
+   select id, lev, weight from member where
+            lev in(select lev from member where weight<50) ;
+
+----- Sub Query --------------------------------------------------------
+
+=> 종류 : single row S , multi row S, multi column S, corelated S
+
+=> 실습  : 3333 와 같은 반 학생 명단 출력하기
+	-> 3333의 반 을 알아내고,
+	-> 이 반과 동일한 반을 가진 자료 출력
+
+=>1)  3333의 반 을 알아내기
+	select major from student where sno = 3333 ;
+=>2)  이 반과 동일한 반을 가진 자료 출력
+	select * from student where major = ???? ;
+=> 1) + 2) 서브쿼리로 구현
+	select * from student where major = (select major from student where sno = 3333) ;
+
+=> 실습 : sno =4444 와 동일 추천인 에 해당하는 학생 명단 출력
+	select * from student where rno = (select rno from student where sno = 4444) ;
+
+** 과제 banana 와 같은 등급의 회원 출력
+=> banana 의 등급을 읽어오고,
+	select lev from member where id='banana'; => 찾은 등급과 비교
+
+=> 그 등급과 동일한 등급을 가진 회원 검색
+	select id, name, lev from member where lev = 찾은 등급
+	select id, name, lev from member where lev = 'D' ;
+
+=> subQuery -> query문이 query문을 포함
+	select  id, name, lev from member
+      		where lev=(select lev from member where id='banana') ;
+
+--다양한 실습
+=> studt 에서 sno 7777 인 학생과 같은반 학생들 출력하기 ( sno, major )
+	select sno, major from studt where
+		major=(select major from studt where sno=7777) ;
+
+----------------------------------------------------------------------
+
+// Join + Sub Query
+-> 위 에서 sno, snsme, major, mname 출력하기 ( Sub Query + join )
+
+	select sno, sname, s.major, mname from student s, mcodet m
+	where ( s.major = (select major from student where sno = 3333))
+		and ( s.major=m.major);
+
+=> board 에서 글번호 3번 의 id 가 쓴 글들 과 id의 name 을 모두 출력.
+1) select seq, id, title from board where id=(select id from board where seq=3) ;
+2) select seq, b.id, title, m.name from board b, member m
+      where (b.id=(select id from board where seq=3)) AND (b.id=m.id);
+
+---- 연습 --------------------------------------------------
+
+=> seq 20 인 글의 root 값과 동일한 root 를 가지고 있는 글의 seq, writer, name, root 출력하기
+     select seq, writer, name, root from board, member where writer=id
+     and root = ( select root from board where seq=20 ) ;
+
+
+=> id 가 banana 인사람과 동일한 lev 가진 member 출력하기
+=> select id, name,lev from member where lev = (select lev from member where id='banana') ;
+
+
+// '김지훈'  과 회사코드가 동일한 사람 나와라
+// 김지훈 회사코드 찾고  select company from studt where name='김지훈' ;  => '????'
+// 찾은 회사코드로 동일한 회사코드 가진 사람 검색 => '****'
+// select sno, name  from studt where company='****'
+
+// => 내 회사코드 찾고, 그것과 회사코드 동일자료 검색 (2단계 과정 필요
+
+SQL>select  sname, company, pay from studt where
+      company =( select  company from studt where sname='김지훈' ) ;
+
+
+// '박상혁'  과 같은반 사람 나와라
+SQL>select  name, major, pay from studt where major = 'a'  ;
+
+SQL>select  name, major from studt where
+      major =( select  major from studt where name='박상혁' ) ;
+
+SQL>select  major, name, pay  from studt where
+      major =( select  major from studt where name='김지훈' ) ;
+
+SQL>select  major, name, pay  from studt where
+      major ='a' ;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Join Test
+
+board 에서 title 에 'Spring' 이 포함된 글의 seq 와 title, writer 와 writer name 출력하기
+
+=> board 에서 title 에 'Spring' 이 포함된 글의 seq 와 title, writer 출력하고,
+select seq, title, writer from board where title LIKE '%Spring%' ;
+
+=> member 에서 writer 와 같은 id 의 name 가져오기
+select seq, title, writer, name from board, member where writer=id
+and title LIKE '%Spring%' ;
+
+
+// '박상혁'  과 같은반 학생이름 과 반이름 출력
+SQL>select  sname, major, mname from studt, mcodet
+      where major =mcode and
+      major =( select  major from studt where sname='박상혁' ) ;
+
+=============================================================
+-------  Transaction ----------------------------------------------
+=> DML(insert, update, delete) 에 적용, commit, rollback, savepoint
+=> board 복사본 만들고 실습
+create table myboard as select * from board ;
+
+select * from myboard ;
+
+
+회사코드 테이블 이용 (복사본 만들기)
+
+create  table ccodet1 as select * from ccodet ;
+=> select * from ccodet1 ;
+
+=> Rollback Test
+delete from ccodet1 where ccode = '1' ;
+delete from ccodet1 where ccode = '2' ;
+delete from ccodet1 where ccode = '3' ;
+delete from ccodet1 where ccode = '4' ;
+
+select * from ccodet1 ;
+
+rollback ;
+select * from ccodet1 ;
+
+=> SavePoint Test
+delete from ccodet1 where ccode = '1' ;
+delete from ccodet1 where ccode = '2' ;
+SavePoint s1 ;
+delete from ccodet1 where ccode = '3' ;
+delete from ccodet1 where ccode = '4' ;
+
+select * from ccodet1 ;
+
+rollback to s1 ;
+select * from ccodet1 ;
+select * from ccodet1 ;
+
+@ c:\Mtest\plSqlEx\EXAM01
+
+==================================================================

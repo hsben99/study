@@ -1,0 +1,120 @@
+role 
+
+롤이란?? 
+
+(롤에게 ??)권한 주는방법
+
+오라클 포트변경해야함
+Port for 'Oracle HTTP Listener': 8080
+
+계정생성 : 
+ create user 이름 identified by 비번 ;
+
+롤 만들기 : 
+ create role 롤이름;
+
+롤에 권한부여 :
+ grant create session, create table to myrole
+ (session은 아이디 만드는 권한, table은 테이블 만드는권한)
+
+롤을 계정에 부여 :
+ grant 롤이름 to 계정이름;
+
+데이터입력 권한 주기(계정에 직접 줘야함 롤에 못줌)  : 
+ grant unlimited tablespace to kimyj; 
+
+계정의 패스워드 수정 :
+ alter user 계정이름 identified by 바꿀패스워드 ;
+
+계정삭제 :
+ drop user 계정이름 ;(테이블이 있으면 cascade 어쩌고 저쩌고;;??)
+   - drop user 유저이름 CASCADE;
+
+롤삭제 :
+ drop role 롤이름
+
+VIEW : 
+ 한 테이블의 자주 보는 컬럼들만 묶어놓은 테이블같은것을 만들어놓는것( 보안에 유리 ex)신입에게 테이블의 일부정보만 보게해줌)
+ 
+VIEW table 만들기
+ create or replace view 뷰네임 as select 컬럼,컬럼... from 테이블명
+
+INDEX : 
+ - 피지컬적으로table과 index있음
+ - index가있으면 데이터를 빨리찾을수있음
+ - pk 또는 unique 가 있으면 자동적으로 생성됨
+ - 테이블이름 대소문자 구분함
+ - index를 따로 만들수도 있음
+
+INDEX 만들기
+create index 인덱스이름 on 테이블명(컬럼명)
+
+
+
+
+
+
+
+
+---임시메모---
+create table produnct(
+id varchar2(10) primary key,
+name varchar2(10),
+price number(10)
+)
+
+insert into produnct values(
+'asdf',
+'asdfzzz',
+55
+)
+
+
+
+create table board(
+seq number(10) primary key,
+title varchar2(30),
+content varchar2(2048),
+regdate date,
+author varchar2(30)
+);
+
+
+
+insert into board values(
+0,'0번쨰 게시물','0번째 내용',sysdate,'한승빈');
+
+
+create table coment(
+cseq number(10),
+cname varchar2(30),
+ccontent varchar2(2048),
+cregdate date,
+root number(30),
+indent number(30),
+step number(30),
+CONSTRAINTS coment_fk FOREIGN KEY(root) REFERENCES boardNotice(seq)
+);
+
+
+
+은혜씨 13000
+승빈 11000
+재영 35000 / 8750
+
+
+set linesize 200
+
+COL seq FORMAT A30
+COL title FORMAT A30
+COL content FORMAT A30
+COL regdate FORMAT A30
+COL autthor FORMAT A30
+
+
+
+
+
+
+
+

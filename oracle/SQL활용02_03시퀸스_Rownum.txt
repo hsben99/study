@@ -1,0 +1,304 @@
+=====================================================
+
+*** @ c:\Mest\sql001.txt  => 자동실행 가능
+*** GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기
+*** edit c:\MTest\boardset.txt   메모장으로 열기
+
+sqlplus system/oracle
+conn  system/oracle
+
+set linesize 100
+set pagesize 100
+COLUMN price Format 999999 ;
+COLUMN id Format a10 ;
+COLUMN code Format a10 ;
+COLUMN name Format a15 ;
+
+COLUMN sno Format 9999 ;
+COLUMN sname Format a10 ;
+
+COLUMN wid Format a10 ;
+COLUMN title Format a15 ;
+COLUMN seq Format 999 ;
+
+COLUMN content Format a40 ;
+COLUMN regdate Format a12 ;
+
+COLUMN root Format 999 ;
+COLUMN step Format 999 ;
+COLUMN indent Format 999 ;
+
+COLUMN name Format a10 ;
+COLUMN id Format a10 ;
+COLUMN birthd Format a10 ;
+COLUMN granted_role Format a20 ;
+
+select * from board ;
+select * from member ;
+=================================================
+
+- 다양한 함수 및 함수의 응용 ( Board 관련 함수 )
+-- nvl, Sequence, Rownum
+=================================================
+1) NVL
+	nvl 함수 (a,b) => a 없으면(NULL 이면) b 선택
+=> student 에서 sno 의 최소값 또는 최소값이 없다면 1000 을 출력 하도록 select 문 작성
+ 	select nvl(5,1000) from dual ;
+	select nvl(null,1000) from dual ;
+  select nvl(min(point),1000) from member ;\
+  -> auto numbering 에 응용됨
+    ( new seq : 현재 테이블의 seq중 가장 큰 값 + 1  )
+  select nvl(max(seq),1000) from board ;
+  -> 실습
+    1) board 를 이용해서 myboard 만들기
+      (create table myboard as select * from board where 2=1;)
+       또는 mybord 를 구조만 남겨놓기 ( 자료 모두지워짐 : truncate table myboard;)
+    2) myboard 에 nvl 적용해서 값이 없는 경우 확인
+       select nvl(max(seq),1000) MaxTest, nvl(min(seq),0) MinTest from myboard;
+    3) myboard 에 nvl 적용해서 auto numbering 적용하기
+       select max(seq) Maxnum , nvl(max(seq),0)+1  newNum from myboard;
+       select max(seq) Maxnum , nvl(max(seq),0)+1  newNum from board;
+    4) 이것을 적용한 입력문 만들기
+       insert into myboard values(
+         (select nvl(max(seq),0)+1 from myboard),
+         'title 하하하?','apple','nvl test test' ,sysdate,0);
+
+       insert into board values(
+         (select nvl(max(seq),0)+1 from board),
+         'title 하하하','white','nvl test test' ,sysdate,0);
+
+=> member 에서 point 의 값이 1000보다 작은값이 있으면, 그값을 가져와 출력하고,
+	없으면 9999를 출력한다.
+  select m.id, m.name, m.point,
+  nvl((select point from member im where point<1000 and m.id=im.id),9999) nvlTest from member m;
+
+	select nvl((select sno from student where sno < 1000), 1000) test from student;
+	select nvl((select sno from student where sno < 1000), 1000) test from dual;
+	-> sno < 1000 에 해당되는 자료가 없으므로 처리됨
+
+	select nvl((select sno from student where sno < 4444), 1000) test from student;
+	-> ORA-01427: 단일 행 하위 질의에 2개 이상의 행이 리턴되었습니다.
+
+	select nvl((select sno from student where sno < 4444), 1000) test from dual;
+	-> ORA-01427: 단일 행 하위 질의에 2개 이상의 행이 리턴되었습니다.
+==================================================================
+*** nvl 과 비교
+
+insert into board values(
+  (select nvl(max(seq),0)+1 from board),
+  'sequence 와 nvl 비교 하하하','apple','nvl test test' ,sysdate,3);
+------------------------------------------------------------------
+
+ ※시퀀스(sequence) : 자동값증가
+ [형식]
+  create sequence 시퀀스명
+  [increment by n]         ---> 증가값
+  [start with n]           ---> 시작값
+
+ ==시퀀스주기==
+create sequence seq_bo increment by 1 start with 0; (X)
+-> ORA-04006: START WITH 에 MINVALUE 보다 작은 값은 지정할 수 없습니다
+
+create sequence seq_bo increment by 1 start with 1; (O)
+-> 시퀀스가 생성되었습니다.
+
+현재값확인 : currval
+=> select seq_bo.currval from dual;
+-> ORA-08002: 시퀀스 SEQ_ID.CURRVAL은 이 세션에서는 정의 되어 있지 않습니다
+-> nextval 를 한번 시행 해야 currval 확인 가능.
+
+자동증가 : nextval
+=> select seq_bo.nextval from dual ;
+
+table 에 적용
+=> insert into board values(seq_bo.nextval,,,,) ;
+
+insert into board values(seq_bo.nextval,'sequence test555','melon','nvl test test',sysdate,5);
+
+--------------------------------------------------------------------
+
+ ==시퀀스 삭제==
+ drop sequence seq_bo;
+
+------------------------
+===================================================================
+
+***  rownum : 오라클에서  Mysql  의 limit 구현
+
+=> 오라클에서 1번의 select 구문이 실행되면 해당구문에
+    자동으로 1 row당 1개의 번호가 자동으로 생성되며 (1~.. )
+    이 자동생성번호의 필드명이 rownum 이다.
+
+	-> 서브쿼리를 쓰지 않아도 순위가 제대로 출력되도록 한다.
+	-> 대상 컬럼을 중복여부 상관 없이 순위(번호)를 부여한다.
+
+** 실습
+=> member 의 rownum 출력하기
+	select id, name, rownum from member ;
+  select rownum, id, name from member  order by id;
+=> board 의 rownum 출력하기
+	select rownum, seq, id from board;
+	-> rownum 1~10 까지 출력하기
+	select rownum, seq, id from board where rownum >=1 and rownum <=10;
+	select rownum, seq, id from board where rownum between 1 and 10;
+
+	select rownum, seq, id from board order by seq desc;
+	-> ordey by 가 적용 되어 rownum 이 생성(범위에 사용가능, 단 seq가 primarykey이 라서 가능함)
+	비교 : select rownum, seq , id from board where rownum between 1and 10;
+
+	select rownum, seq, id from board order by seq desc where rownum between 1 and 10; 
+	-> ORA-00933: SQL 명령어가 올바르게 종료되지 않았습니다
+	   (  정렬후에 where 절이 오기때문 )
+	select rownum, seq, id from board where rownum between 1 and 10 order by seq desc;  
+
+** board 조건 Test	
+  select rownum, seq, id, root, step from board order by root desc, step asc;  
+ -> rownum 이 paging 에서 필요로하는 순서값이 될 수 없음.
+
+=>  해결 : Rownum(), OVER() 함수 사용 
+
+	select sno, sname, rownum from student  where major='c';
+	select sno, sname, rownum from student
+		where major='c'  order by sno desc;
+
+	select sno, sname, rownum from student
+		where major='c'  order by sname desc;
+	-> 불러온 후 정렬 하기 때문에 rownum 순서와 다를 수 있음.
+     ( 그러나 p.key 는 반영됨 )
+
+	select sno, sname, rownum from student where rownum <= 5  ;
+	select sno, sname, rownum from student where rownum >= 3 and rownum <=5 ;
+	=> 구간 검색 시 주의 (아래 확인)
+
+ ----------------------------------------------
+
+1) 10개 까지 출력
+  Mysql
+	=> select * from table_name  limit 10;
+  Oracle
+	=> select * from
+  		where rownum <= 10;
+
+2) 3번째 부터 5개 출력
+  Mysql
+	=> select * from table_name limit 3, 5;
+
+  Oracle ( 구간 검색시 주의 사항 )
+	=> 테이블명 대신 검색할 데이터 셋이 와야함
+	( 즉, 서브쿼리로 데이터 셋을 불러 놓아야 함)
+	=> select 문의 검색필드가 서브쿼리의 검색필드와 동일 해야 함
+	=> 서브 쿼리의 rownum 은 alias 를 반드시 사용하여
+	   main select 문의 rownum 과 구별 해 준다.
+
+	=> select sno, sname, rownum from student where rownum >= 3 and rownum <=5 ;  (x)
+	=> select sno, sname, rownum from
+		( select sno, sname, rownum rn from student )
+		where rn between 5 and 8 ;
+
+	=> select id, rownum from
+		( select id, rownum  from member )
+  		where rownum >= 3 and rownum <= 8;
+
+	   select id, rownum from
+		( select id, rownum rn from member )
+  		where rn >= 3 and rn <= 8;
+
+
+	=> 비교해보기
+	   select id, rn from
+		( select id, rownum rn from member )
+  		where rn >= 3 and rn <= 8;
+
+	   select id,rownum, rn from
+		( select id, rownum rn from member )
+  		where rn >= 3 and rn <= 8;
+
+     	=> where rn between 3 and 8 ;
+
+3) 순서가 있는 경우
+	select id, rownum from
+		( select id, rownum rn from member order by id )
+  		where rn >= 3 and rn <= 8;
+	-> rownum , order by : primary key의 경우만 적용됨.
+	-> ROW_NUMBER() OVER(order by root desc, step asc) 사용함.
+
+=> board 에 적용
+
+-> test1. (6 ~ 10 까지 5개 출력 )
+1) 전체 출력
+select rownum, b2.seq, b2.id, b2.title from
+ (select b.* from board b order by seq desc) b2 ;
+
+2) rownum 4 ~ 6 까지 출력 ( 2page 를 가정)
+   => where 조건이 추가되면 오류 발생할 수 있음
+select rownum, b2.seq, b2.id, b2.title from
+    (select b.* from board b order by seq desc) b2
+    where rownum <6 ;
+    --  단, > 기호 사용시 오류 ,
+    -- 구간 설정시 오류 : where rownum between 4 and 6 ;
+
+3) ROW_NUMBER() OVER(order by root desc, step asc) 적용
+
+test1.
+select rnum, seq, id, root,step from
+    (select b.* ,ROW_NUMBER() OVER(order by seq desc ,step asc) rnum from board b )
+
+test2.
+select rnum, seq, id, root,step from
+    (select b.* ,ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b )
+        where rnum>= sno and rnum <=eno;
+
+select rnum, seq, id, root,step from
+    (select b.* ,ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b )
+        where rnum between 1 and 5;
+
+
+----------------------------------------------------------------------
+select bb.seq,bb.title,rownum rn from
+(select b.* from board b order by root desc , step asc) bb ; (O)
+
+select bb.seq,bb.title,rownum rn from
+(select b.* from board b order by root desc , step asc) bb
+ where rn>5 and rn<11 ;  (x)
+	-> 이때의 where 가 적용 되지 않음
+
+-> test2. order by 적용 test
+select bb.seq,bb.root,bb.step,bb.indent ,rownum from (select b.* from board b order by root desc , step asc) bb;
+select seq,root,step,indent ,rownum from board;
+
+-> test3. ROW_NUMBER() OVER(order by root desc, step asc)
+select rownum, seq, title, id from board order by seq desc ;
+
+select rnum, seq, title, id from
+(select b.* ,ROW_NUMBER() OVER(order by seq desc) rnum from board b )
+where rnum between 4 and 6;
+
+
+select seq,title,writer,content,
+  to_char(regdate, 'yyyy/mm/dd/ hh24:mi:ss') regdate,cnt,root,step,indent
+  from (select b.* , ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b )
+  where rnum >5 and rnum <11 ;
+	-> 이때의 ROW_NUMBER() 은 order by 가 적용됨
+-------------------------------------------------------------------------------
+
+OVER
+-> ORDER BY, GROUP BY 서브퀘리 를 개선하기 위해 나온 함수
+
+=> select lev,id, count(*) over() count from member;
+	( 출력은 되지만 원하는 결과는 아님 )
+
+
+--------------------------------------------------------------------------------
+
+<!-- pagingList() -->
+<select id="bPageList" resultType="com.ncs.green.vo.BoardVO">
+<![CDATA[ select seq,title,wid,content,
+  to_char(regdate, 'yyyy/mm/dd/ hh24:mi:ss') regdate,cnt,root,step,indent
+  from (select b.* , ROW_NUMBER() OVER(order by root desc, step asc) rnum from board b )
+  where rnum >= #{fno} and rnum <= #{lno} ]]>
+</select>
+<!-- select * from  board b where row_num >= #{fno} and row_num <= #{lno}
+  => select * from  board b where row_num > skip and row_num <= skip+10 -->
+<!--  where rownum between #{fno} and #{tno} -->
+
+--------------------------------------------------------------------------------

@@ -1,0 +1,17 @@
+create  table member (    
+id varchar2(10) primary key ,
+password varchar2(10),
+name varchar2(30),
+lev varchar2(2),
+birthd varchar2(10) ,
+point number(10),
+weight number(5,2)) ; 
+
+insert into member values('javasam','12345','김유신','A','1999-09-09',12345,67.89); 
+insert into member values('hongsam','12345','홍길동','A','1999-09-09',12345,67.89); 
+insert into member values('leesam','12345','이순신','D','1999-09-09',12345,67.89); 
+insert into member values('banana','12345','바나나','B','1999-09-09',12345,67.89); 
+insert into member values('coffee','12345','카푸치노','B','1999-09-09',12345,67.89); 
+insert into member values('apple','12345','스티브','C','1999-09-09',12345,67.89); 
+
+select * from member ;

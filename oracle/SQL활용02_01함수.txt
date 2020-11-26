@@ -1,0 +1,330 @@
+=====================================================
+
+*** @ c:\Mest\sql001.txt  => 자동실행 가능
+*** GET c:\MTest\boardset.txt    sqlPlus 로 화일 불러오기
+*** edit c:\MTest\boardset.txt   메모장으로 열기
+
+sqlplus system/oracle
+conn  system/oracle
+
+set linesize 1200
+set pagesize 1200
+COLUMN price Format 999999 ;
+COLUMN id Format a10 ;
+COLUMN code Format a10 ;
+COLUMN name Format a15 ;
+
+COLUMN wid Format a10 ;
+COLUMN title Format a15 ;
+COLUMN seq Format 999 ;
+
+COLUMN content Format a40 ;
+COLUMN regdate Format a12 ;
+
+COLUMN root Format 999 ;
+COLUMN step Format 999 ;
+COLUMN indent Format 999 ;
+
+COLUMN username Format a15 ;
+COLUMN granted_role Format a20 ;
+
+select * from board ;
+select * from member ;
+=================================================
+=================================================
+***  능력단위 : 22001020413_16v3   SQL활용
+    ** 능력단위요소
+      => 2001020413_16v3.1 기본 SQL 작성하기
+      => 2001020413_16v3.2 고급 SQL 작성하기
+
+=================================================
+2001020413_16v3.2 고급 SQL 작성하기
+=================================================
+*** 유용 함수 & 연산자
+
+*** 주요 함수 ***
+
+** DUAL Table
+
+* 1년은 몇분 일까요 ?
+	-> select  24*60*365 from dual ;
+
+1) 숫자
+	: ABS, FLOOR , ROUND , TRUNC , MOD
+
+  => ABS 절대값 : select -10, ABS(-10) from dual ;
+
+  => FLOOR 소수이하 내림:
+	select 34.56789, FLOOR(34.56789) from dual ;
+	select FLOOR(-34.56789), FLOOR(-34.1) from dual ;  -> 모두 -35
+
+  => TRUNC 반올림 없이 버림:
+	-> select 34.56789, TRUNC(34.56789) from dual ;  -> 34
+	-> select 34.56789, TRUNC(34.56789, 3) from dual ;   -> 34.567
+	비교
+	-> select FLOOR(-34.56789), TRUNC(-34.56789) from dual ;
+
+  => ROUND 반올림 :
+	-> select 34.56789, ROUND(34.56789), ROUND(34.123) from dual ;
+    select -34.56789, ROUND(-34.56789), ROUND(-34.123) from dual ;
+	-> select 34.56789, ROUND(34.56789, 3) from dual ;   -> 34.568
+
+  => MOD 나머지 :
+	-> select MOD(27,2) , MOD(27,3)  from dual ;
+	-> board 에서 seq 가 홀수인 글의 seq, title, id 만 출력 하기
+	select seq, title, wid from board where MOD(seq,2)=1 ;
+	select seq, title, wid from board where MOD(seq,2)=0 ;
+	select seq, title, wid from board  ;
+
+2) 문자1
+	: UPPER, LOWER, INITCAP , LENGTH(글자의 갯수), LENGTHB(글자의 BYTE 수)
+
+  => UPPER 대문자로
+	select 'oracle' , UPPER('oracle') from dual ;
+
+	board 에서 wid 를 모두 소문자로 또는 모두 대문자로 seq, title, writer 만 출력 하기
+	select seq, title, UPPER(wid) from board ;
+
+  => LOWER 소문자로
+	select 'ORACLE' , LOWER('ORACLE') from dual ;
+	select seq, title, LOWER(wid) from board ;
+
+  => INITCAP 첫글자만 대문자로
+	select 'WELCOME TO ORACLE' , INITCAP('WELCOME TO ORACLE') from dual ;
+	select id, initcap(id) ,name from myfriend;
+	-> 테이블 데이터를 수정하는 경우
+	update myfriend set id=initcap(id) ;
+
+select INITCAP(title) title from board;
+
+  => select LENGTH('오라클'), LENGTHB('오라클') from dual ;  -> 3, (9)
+     myfriend 의 name 의 length , lengthb  출력 하기
+     select name, length(name), lengthb(name) from myfriend;
+
+  => select LENGTH('oracle'), LENGTHB('oracle') from dual ;
+
+3) 문자2
+	: SUBSTR(문자대상, 시작위치, 추출갯수), SUBSTRB(바이트수대상, 시작위치, 추출갯수)
+
+  => 시작위치를 음수사용하면 뒤에서 부터 ~~
+  => select SUBSTR('WELCOME TO ORACLE' , 4, 3) from dual ; -> 4번째 부터 3개
+     select SUBSTR('WELCOME TO ORACLE' , -4, 3) from dual ; -> 뒤에서 4번째 부터 3개
+  => select SUBSTR('안녕 오라클 !!!' , 4, 3) from dual ; -> 4번째 부터 3개
+
+  => select SUBSTRB('WELCOME TO ORACLE' , 4, 3) from dual ;
+     select SUBSTRB('안녕 오라클 !!!' , 4, 3) from dual ;
+     select SUBSTRB('안녕 오라클 !!!' , 4) from dual ;
+
+  => member 에서  9월의 생일 명단 id, name, birthd 출력하기
+     select id, name, birthd from member;
+     select id, birthd from myfriend where substr(birthd,6,2) = '03' ;
+
+     2000년 이전에 출생한 친구 명단 id,name,birthd 출력
+     select id,name,birthd from myfriend where substr(birthd,1,4) < '2000' ;
+
+     select id, name, birthd from member where SUBSTR(birthd,6,2)='09'  ; (o)
+     select id, name, birthd from member where SUBSTR(birthd,6,2)=09  ; (o)
+
+4) 문자3
+	: INSTR, INSTRB, LPAD/RPAD, LTRIM/RTRIM, TRIM
+
+  => INSTR(문자기준), INSTRB(바이트 기준) :  지정된 문자의 위치(1부터 시작)
+	select INSTR('WELCOME TO ORACLE' , 'O') from dual ;
+	select INSTR('WELCOME TO ORACLE' , 'O', 6 , 2) from dual ;
+		-> 6번째 글자부터 찾아서 두번째 발견되는 'O' 의 위치
+
+  => LPAD/RPAD : 지정 숫자의 부족분을 특정 문자로 채우기
+		( MSSQL에서는 REPLICATE('채울문자','지정길이',- LEN('칼럼')) 사용 )
+	-- ※※※ 오라클에서 한글의 경우 지정된 캐릭터셋에 따라 2 또는 3byte 이지만
+	--       LPAD/RPAD 함수 에서는 무조건 한글은 2byte 로 계산함.
+
+	select LPAD('ORACLE' , 10 , '*') from dual ;
+	select LPAD('오라클' , 10 , '*') from dual ;
+	select RPAD('ORACLE' , 10 , '*') from dual ;
+
+	myfriend 에서 id 를 앞의 두 글자만 표시하고 나머지는 * 로 표시 되도록
+
+	-> COLUMN aid Format a15 ;
+	-> select id, RPAD(SUBSTR(id,1,2) , 10 , '*') name from myfriend ;
+	-> select id, RPAD(SUBSTR(id,1,2) , LENGTH(id) , '*') name from myfriend ;
+
+	myfriend 에서 name 앞의 첫 글자만 표시하고 나머지는 * 로 표시 되도록
+	-> select no, name, rpad(substr(name, 1,1), length(name)+1 , '*') name from myfriend;
+
+	-> select id, name, RPAD(SUBSTR(name,1,1) , LENGTH(name)+1 , '*') name from mymember ;
+	                 -> RPAD(홍,3+1,'*') -> 0000 -> 홍**
+
+	** RPAD 를 사용해서 자릿수 숫자를 우측에 표시
+	select RPAD('ORACLE' , 9 , LENGTH('ORACLE')+1) from dual ;  // ORACLE777
+	select RPAD('ORACLE' , 9 , SUBSTRB('123456789' , LENGTH('ORACLE')+1)) from dual ;
+	select RPAD('apple' , 9 , SUBSTRB('123456789' , LENGTH('apple')+1)) from dual ;
+
+  => LTRIM/RTRIM, TRIM
+	select LTRIM('     WELCOME TO ORACLE !!!     '), name from myfriend ;
+	select RTRIM('     WELCOME TO ORACLE !!!     '), name from myfriend ;
+	select TRIM('a' FROM 'aaaaWELCOME TO ORACLE !!!aaaa'), name from myfriend ;
+
+5) 날짜
+	: SYSDATE , MONTHS_BETWEEN , ADD_MONTHS ,
+	 NEXT_DAY , LAST_DAY , ROUND, TRUNC
+
+  => SYSDATE : 현재 날짜 반환
+	select SYSDATE from dual ;
+	select SYSDATE+1 from dual ;
+	select SYSDATE-1 from dual ;
+
+  select regdate, SYSDATE-regdate 글등록후몇일   from board ;
+  select regdate, TRUNC(SYSDATE-regdate) 글등록후몇일   from board ;
+
+	=> TRUNC : 내림,    ROUND: 올림
+	     시간값으로 값으로 인한 계산 부분을 내림(1일 적게됨) 또는 올림(정확)
+	select regdate, TRUNC(SYSDATE-regdate) days   from board ;
+	select regdate, ROUND(SYSDATE-regdate) days   from board ;
+
+  -> 탄생 후 몇일 지났는지 ....
+	select '1999-01-01' BirthDay, TRUNC(SYSDATE - TO_DATE('19990101', 'YYYY/MM/DD')) 탄생후몇일 from dual ;
+  -> 등급이 D 인 member 들의 birthd 를 이용해서 id, birthd, 탄생후 몇일 을 출력하세요 ~~
+  select id, birthd, TRUNC(SYSDATE - TO_DATE(birthd, 'YYYY-MM-DD')) 탄생후몇일
+  from member where lev='D';
+
+	--------------------------------------------------------------------------------------------------------------
+	** 실습 : 	마감일 이 7일 이내의 글 중에서 가장 작은 것 5개 출력하기
+	=> 1) 확인 필요함
+	select  *  from
+		(select regdate, TRUNC(SYSDATE-regdate) edate , ROW_NUMBER() OVER(order by edate desc) rnum
+		 from board b where edate < 7) where rnum < 5
+
+	=> 2) 확인 필요함
+	select  *  from
+		(select b.* , ROW_NUMBER() OVER(order by regdate asc) rnum
+		 from board b where regdate <= (SYSDATE+6))   where rnum < 5
+
+	--------------------------------------------------------------------------------------------------------------
+
+---------------------------------------
+  => 실습
+  -> board 로 myboard , seq 에 제약조건 primary key 부여하기
+	create table myboard as select * from board ;
+	alter table myboard add primary key (seq);
+	select seq, title, writer from myboard ;
+
+  -> myboard에서 글쓴지 2일 이상이 경과된 글의 cnt 를 100 으로 채운다.
+  update myboard set cnt=100 where ROUND(sysdate-regdate) >= 2;
+
+  -> myboard에서 글쓴지 10일 이상 이 경과된 글은 삭제하기
+	delete myboard where (sysdate-regdate) >=10 ;
+	select seq, writer,regdate from myboard ;
+---------------------------------------
+
+  => MONTHS_BETWEEN : 두날짜 사이가 몇개월 인지
+	select regdate, SYSDATE, TRUNC(MONTHS_BETWEEN(SYSDATE , regdate)) 글등록후몇개월   from board ;
+	select '1999-01-01', SYSDATE, TRUNC(MONTHS_BETWEEN(SYSDATE , TO_DATE('1999-01-01', 'YYYY/MM/DD'))) Month from dual ;
+  select '1999-01-01', SYSDATE, TRUNC(MONTHS_BETWEEN(SYSDATE , '1999-01-01')) Month from dual ; -> OK
+
+
+  => ADD_MONTHS : 특정일에 개월수 더하기
+	select id, regdate, ADD_MONTHS(regdate, 6) 글등록6개월후 from board ;
+
+  => NEXT_DAY : 특정일에서 최초로 도래하는 인자로 받은 요일의 날짜
+
+	오늘을 기준으로 최초로 나오는 화요일 이 몇일 인지 ~~~
+	select sysdate, NEXT_DAY(sysdate,'수요일') 첫수요일 from dual ;
+	글등록을 기준으로 최초로 나오는 토요일 이 몇일 인지 ~~~
+	select id, regdate, NEXT_DAY(regdate,'토요일') 첫토요일 from board ;
+
+  => LAST_DAY : 해당월의 마지막 날짜
+	select sysdate, LAST_DAY(sysdate) 말일 from dual ;
+  -> 2019년 2월의 마지막날은 며칠인지 .....
+  select '2019/02/01', LAST_DAY(TO_DATE('2019/02/01','YYYY/MM/DD')) 말일 from dual ;
+  select '2019-02-01', LAST_DAY('2019-02-01') 말일 from dual ;  -> OK
+
+  => ROUND : 인자로 받은 날자를 반올림
+	select regdate, ROUND(SYSDATE-regdate) 글등록후몇일   from board ;
+
+  => TRUNC : 인자로 받은 날자를 버림
+	select regdate, TRUNC(SYSDATE-regdate) 글등록후몇일   from board ;
+
+6) 형변환 : TO_CHAR , TO_DATE , TO_NUMBER
+
+  => TO_CHAR  ( 날짜 와 숫자를 문자로 )
+	select sysdate, TO_CHAR(sysdate, 'YYYY-MM-DD') from dual ;
+	select sysdate, TO_CHAR(sysdate, 'YYYY-Mon-DD') from dual ;
+	select sysdate, TO_CHAR(sysdate, 'YYYY-Mon-DD DAY') charDate from dual ;
+	select sysdate, TO_CHAR(sysdate, 'YYYY-Mon-DD DY') from dual ;
+	select sysdate, TO_CHAR(sysdate, 'YYYY-Mon-DD, HH:MI:SS') from dual ;
+	select sysdate, TO_CHAR(sysdate, 'YYYY-Mon-DD, HH24:MI:SS') from dual ;
+
+	숫자->문자로
+	select TO_CHAR(1234567, '999,999,999') , TO_CHAR(1234567, '000,000,000')from dual ;
+	select TO_CHAR(1234567, '999999999') , TO_CHAR(1234567, '000000000')from dual ;
+
+	member 에서 point 는 3자리마다 "," 표시하고 weight 는 앞에 통화기호 붙여주기
+	select id, TO_CHAR(point, '999,999'), TO_CHAR(weight, 'L999,999.999') from member; -> OK
+  select id, TO_CHAR(point, '999,999'), TO_CHAR(weight, '$999,999.999') from member; -> OK
+  select id, TO_CHAR(point, '999,999'), TO_CHAR(weight, '%999,999.999') from member; -> Error
+
+	-> weight 뒤에 'kg' 붙여주기
+	select id, name, TO_CHAR(weight, 'L999,999.999') || ' Kg' weight  from member;
+
+	** point 에는 통화기호 표시, weight 에는 뒤에 'kg'
+	select id, TO_CHAR(point, 'L999,999'), weight || ' Kg' from member ;
+
+  => TO_DATE
+	올해 몇일이 지났을까요 ~~
+	select sysdate-'2019/01/01' from dual ;  ( TYPE X ) -> day 계산에서는 type 일치
+	select sysdate-TO_DATE('2019/01/01', 'YYYY/MM/DD') , TO_DATE('2019/01/01', 'YYYY/MM/DD') testDate from dual ;
+  select sysdate-TO_DATE('2019/01/01', 'YYYY/MM/DD') ,
+    TO_CHAR(TO_DATE('2019/01/01', 'YYYY/MM/DD'), 'YYYY-MM-DD') testDate from dual ;
+
+	-> myfriend 의 birthd ( varchar Type) 를 이용해서 오늘이 태어난지 몇일째 인지 출력하기 ?
+	select id, birthd, sysdate-TO_DATE(birthd, 'YYYY/MM/DD') 탄생후몇일 from myfriend ;
+
+  -> member 에서 birthd 가 '1970/01/01' 인 member 출력 -> varchar2
+  select id, name, birthd from member where birthd='1970/01/01' ;
+
+  -> board 에서 regdate 가 '2020/04/01' 인 글 출력 -> date Type
+  select seq, id, regdate from board where regdate='2020/04/01' ; (X)
+  select seq, id, regdate from board where regdate>='2020/04/01' and regdate<'2020/04/02';
+  select seq, id, regdate from board where regdate between '2020/04/01' and '2020/04/02';
+  select seq, id, regdate, TO_CHAR(regdate,'YYYY-Mon-DD, HH:MI:SS') dateTime from board;
+
+  => TO_NUMBER
+	select '20,000'  - '10,000' from dual ;  (X)
+	select TO_NUMBER('20,000','99,999') - TO_NUMBER('10,000', '99,999') from dual ;
+
+7) NVL  => ppt 65p
+	nvl 함수 (a,b) => a 없으면(NULL 이면) b 선택
+    select nvl(2, 100) nvlTest from dual;
+    select nvl(null, 100) nvlTest from dual;
+
+    -> member 의 lev 가 있으면 출력 없으면 'ERROR' 출력하기
+    select id, nvl(lev, 'ERROR') nvlTest from member;
+    select id, nvl(point, 99999) nvlTest from member;
+
+8) DECODE => 66 page
+
+9) CASE =>  75 page
+=================================================
+** 실습
+1)
+id='banana'
+=> 'b*****'
+=> 'b****a'
+select 'banana' , SUBSTR('banana',1,1) || lpad(substr('banana', length('banana'),1), length('banana')-1 , '*')  ID from dual;
+2)
+=> mymember 에 컬럼 phone varchar2(13) 을 추가하고 '010-1234-7234' 로 초기화 한 후,
+=> mymember 의 전화번호를 '010-****-7***' 로 표시해 보세요 ~~~
+
+create table mymember as select * from member ;
+alter table mymember add phone varchar2(13) default '010-1234-1234' ;
+
+alter table mymember add test varchar2(13);
+alter table mymember add test2 varchar2(13) default 'default test';
+update mymember set phone = '010-1111-1111' ;
+alter table mymember drop column test ;
+
+select id, phone, replace(phone,SUBSTR(phone,5,9),'****-') || Rpad(substr(phone,10,1),4,'*') pTest from mymember;
+select id, phone, Rpad(substr(phone,10,1),4,'*') pTest from mymember;
+
+
+=================================================

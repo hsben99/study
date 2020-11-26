@@ -1,0 +1,53 @@
+** 과제: 사원 관리 프로그램
+
+drop table employees ;
+
+create  table employees (    
+id varchar2(10) primary key ,
+password varchar2(10) not null,
+name varchar2(24),
+lev char(1),
+enter varchar2(10) ,
+gender char(1),
+phone varchar2(30) ) ; 
+
+insert into employees (id,password,name,lev,enter,gender,phone) 
+                values('javasam','12345','김유신','A','1990-01-01','1','010-1010-1234'); 
+
+
+insert into employees values('javasam','12345','김유신','A','1990-01-01','1','010-1010-1234'); 
+insert into employees values('hongsam','12345','홍길동','A','1991-02-02','2','010-1010-2234'); 
+insert into employees values('leesam','12345','이순신','B','1992-03-03','2','010-1010-3234'); 
+insert into employees values('banana','12345','바나나','B','1993-04-04','1','010-1010-4234'); 
+insert into employees values('coffee','12345','카푸치노','A','1994-05-05','1','010-1010-5234'); 
+insert into employees values('apple','12345','스티브','B','1995-09-09','2','010-1010-6234'); 
+
+commit;
+select * from employees ;
+
+
+
+=> 교재 (성) 11장 661Page
+
+1) 테이블 생성 , 자료 5개 입력하기
+=> Table Name : employees
+=> 필드 enter 는 varchar2 로, 
+=> default 값은 지정하지 않아도 됨.
+
+2) 프로젝트 생성
+=> FrontController 1개에서 모든 서비스 기능 처리
+=> name : Web02
+=> package: controller, util , forder : eView
+=> Model : JDBCUtil, EmpDAOSing (싱글턴 패턴으로 구현) , EmpVO
+
+3) FrontController 작성
+=> url 매핑 : @으로 처리
+
+4) View 만들기
+=> index : 정보등록, 목록
+=> insertForm (정보등록) : 등록, 취소
+=> detailView (정보보기)  : 수정, 삭제, 목록
+=> empList  ( 리스트) : 정보등록
+=> doFinish
+
+

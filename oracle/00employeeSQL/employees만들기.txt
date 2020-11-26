@@ -1,0 +1,124 @@
+** 과제: 사원 관리 프로그램
+
+=> 교재 (성) 11장 661Page
+
+1) 테이블 생성 , 자료 5개 입력하기
+=> Table Name : employees
+=> 필드 enter 는 varchar2 로, 
+=> default 값은 지정하지 않아도 됨.
+
+2) 프로젝트 생성
+=> FrontController 1개에서 모든 서비스 기능 처리
+=> name : Web02
+=> package: controller, util , forder : eView
+=> Model : JDBCUtil, EmpDAOSing (싱글턴 패턴으로 구현) , EmpVO
+
+3) FrontController 작성
+=> url 매핑 : @으로 처리
+
+4) View 만들기
+=> index : 정보등록, 목록
+=> insertForm (정보등록) : 등록, 취소
+=> detailView (정보보기)  : 수정, 삭제, 목록
+=> empList  ( 리스트) : 정보등록
+=> doFinish
+
+** employees Table Create
+
+sqlplus system/oracle
+
+conn system/oracle 
+
+set linesize 1200
+set pagesize 1200
+
+COLUMN id Format a10 
+COLUMN password Format a10
+COLUMN name Format a10
+COLUMN lev Format a3
+COLUMN enter Format a12
+COLUMN gender Format a2
+COLUMN phone Format a15
+
+select * from employees ;
+-------------------------------------------------------------------
+
+drop table employees ;
+
+create  table employees (    
+id varchar2(10) primary key ,
+password varchar2(10) not null,
+name varchar2(24),
+lev char(1),
+enter varchar2(10) ,
+gender char(1),
+phone varchar2(30) ) ; 
+
+insert into employees (id,password,name,lev,enter,gender,phone) 
+                values('javasam','12345','김유신','A','1990-01-01','1','010-1010-1234'); 
+
+
+insert into employees values('javasam','12345','김유신','A','1990-01-01','1','010-1010-1234'); 
+insert into employees values('hongsam','12345','홍길동','A','1991-02-02','2','010-1010-2234'); 
+insert into employees values('leesam','12345','이순신','B','1992-03-03','2','010-1010-3234'); 
+insert into employees values('banana','12345','바나나','B','1993-04-04','1','010-1010-4234'); 
+insert into employees values('coffee','12345','카푸치노','A','1994-05-05','1','010-1010-5234'); 
+insert into employees values('apple','12345','스티브','B','1995-09-09','2','010-1010-6234'); 
+
+commit;
+select * from employees ;
+
+-----------------------------------------------------------------------
+메모장 완성후 sqlPlus 창에 일괄처리 명령 으로
+
+ @ c:\MTest\memberCreate.txt
+
+
+
+--Date Type-----------------------------------------------------------------
+create  table member (    
+id varchar2(10) primary key ,
+password varchar2(10),
+name varchar2(30),
+lev varchar2(5),
+pay number(10),
+birthd date ,
+weight number(5,2)) ; 
+
+
+
+insert into member values('javasam','12345','김유신','A',12345,sysdate,67.89); 
+insert into member values('hongsam','12345','홍길동','A',12345,sysdate,67.89); 
+insert into member values('leesam','12345','이순신','A',12345,sysdate,67.89); 
+insert into member values('banana','12345','바나나','B',12345,sysdate,67.89); 
+insert into member values('coffee','12345','카푸치노','B',12345,sysdate,67.89); 
+insert into member values('apple','12345','스티브','B',12345,sysdate,67.89); 
+
+select * from member ;
+
+-----실습
+
+      alter table member add  primary key (name) ;
+
+      alter table member add pay number(10); 
+      alter table member add weight number(5,2); => 123.12
+      alter table member add birthd date default sysdate  ; 
+	
+      update  member  set pay = 6789  ;
+      update  member  set pay = 3456  where lev='A' ;
+     alter table member drop column birthd2 ;
+
+
+*** 실습  :  SPOOL  적용 
+1*  member table 의 자료 수정  (DML) : commit 필요
+	member 에서 자료  insert  ,  update ,   delete  => 2개씩  
+
+2* member table 의 구조 수정  (DDL) :   AutoCommit
+	필드 추가 , 삭제 , 필드명 변경1개 씩 
+  
+3* member table 의 조회 (DQL)
+	where 조건문 20개 연습 ( like ,  order by , and , or 4개씩 )  
+ 
+4* table 생성 -> member2 ( 자료 3개만 입력 , 조회 )
+
+
